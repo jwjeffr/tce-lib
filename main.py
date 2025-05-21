@@ -294,17 +294,17 @@ def main():
         new_state_matrix[second_site, :] = state_matrix[first_site, :]
 
         past = perf_counter_ns()
-        feature_vector = supercell.feature_vector(state_matrix, max_adjacency_order=2, max_triplet_order=2)
-        new_feature_vector = supercell.feature_vector(new_state_matrix, max_adjacency_order=2, max_triplet_order=2)
-        naive_diff = new_feature_vector - feature_vector
-        naive_timings[i] = perf_counter_ns() - past
-
-        past = perf_counter_ns()
         clever_diff = supercell.clever_feature_diff(
             state_matrix, new_state_matrix,
             max_adjacency_order=2, max_triplet_order=2
         )
         clever_timings[i] = perf_counter_ns() - past
+
+        past = perf_counter_ns()
+        feature_vector = supercell.feature_vector(state_matrix, max_adjacency_order=2, max_triplet_order=2)
+        new_feature_vector = supercell.feature_vector(new_state_matrix, max_adjacency_order=2, max_triplet_order=2)
+        naive_diff = new_feature_vector - feature_vector
+        naive_timings[i] = perf_counter_ns() - past
 
         num_atoms[i] = supercell.num_sites
 
