@@ -315,11 +315,25 @@ def main():
     naive_timings = naive_timings[1:] / 1.0e+9
     num_atoms = num_atoms[1:]
 
-    clever_power = linregress(np.log(num_atoms), np.log(clever_timings)).slope
-    naive_power = linregress(np.log(num_atoms), np.log(naive_timings)).slope
+    clever_reg = linregress(np.log(num_atoms), np.log(clever_timings))
+    naive_reg = linregress(np.log(num_atoms), np.log(naive_timings))
 
-    plt.plot(num_atoms, clever_timings, label=rf"clever, $\mathcal{{O}}\left(N^{{{clever_power:.2f}}}\right)$")
-    plt.plot(num_atoms, naive_timings, label=rf"naive, $\mathcal{{O}}\left(N^{{{naive_power:.2f}}}\right)$")
+    plt.scatter(
+        num_atoms, clever_timings, edgecolors="black", facecolor="mediumpurple", zorder=6,
+        label=rf"clever, $\mathcal{{O}}\left(N^{{{clever_reg.slope:.2f} \pm {clever_reg.stderr:.2f}}}\right)$"
+    )
+    plt.scatter(
+        num_atoms, naive_timings, edgecolors="black", facecolor="seagreen", zorder=6,
+        label=rf"naive, $\mathcal{{O}}\left(N^{{{naive_reg.slope:.2f} \pm {naive_reg.stderr:.2f}}}\right)$"
+    )
+
+    num_atoms_continuous = np.linspace(num_atoms.min(), num_atoms.max(), 1_000)
+    predicted_clever_times = np.exp(clever_reg.intercept) * num_atoms_continuous ** clever_reg.slope
+    plt.plot(num_atoms_continuous, predicted_clever_times, linestyle="--", color="mediumpurple")
+
+    predicted_naive_times = np.exp(naive_reg.intercept) * num_atoms_continuous ** naive_reg.slope
+    plt.plot(num_atoms_continuous, predicted_naive_times, linestyle="--", color="seagreen")
+
     plt.yscale("log")
     plt.xscale("log")
     plt.ylabel(r"compute time of $\Delta \mathbf{t}$ (seconds)")
