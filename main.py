@@ -1,8 +1,6 @@
-from enum import Enum, auto
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from itertools import permutations, pairwise
-from typing import Dict
 from time import perf_counter_ns
 
 import numpy as np
@@ -12,6 +10,8 @@ from opt_einsum import contract
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.stats import linregress
+
+from constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS
 
 
 def symmetrize(tensor: sparse.COO, axes=None) -> sparse.COO:
@@ -32,53 +32,6 @@ def symmetrize(tensor: sparse.COO, axes=None) -> sparse.COO:
     perms = list(permutations(axes))
 
     return sum(sparse.moveaxis(tensor, axes, perm) for perm in perms) / len(perms)
-
-
-class LatticeStructure(Enum):
-
-    """
-    lattice structure enum. will be useful for defining things like cutoff distances and atomic bases
-    """
-
-    SC = auto()
-    BCC = auto()
-    FCC = auto()
-
-
-STRUCTURE_TO_ATOMIC_BASIS: Dict[LatticeStructure, np.typing.NDArray[np.floating]] = {
-    LatticeStructure.SC: np.array([
-        [0.0, 0.0, 0.0]
-    ]),
-    LatticeStructure.BCC: np.array([
-        [0.0, 0.0, 0.0],
-        [0.5, 0.5, 0.5]
-    ]),
-    LatticeStructure.FCC: np.array([
-        [0.0, 0.0, 0.0],
-        [0.0, 0.5, 0.5],
-        [0.5, 0.0, 0.5],
-        [0.5, 0.5, 0.0]
-    ])
-}
-
-STRUCTURE_TO_CUTOFF_LISTS: Dict[LatticeStructure, np.typing.NDArray[np.floating]] = {
-    LatticeStructure.SC: np.array([0.0, 1.0, np.sqrt(2.0)]),
-    LatticeStructure.BCC: np.array([0.0, 0.5 * np.sqrt(3.0), 1.0]),
-    LatticeStructure.FCC: np.array([0.0, 0.5 * np.sqrt(2.0), 1.0])
-}
-
-STRUCTURE_TO_THREE_BODY_LABELS: Dict[LatticeStructure, np.typing.NDArray[np.integer]] = {
-    LatticeStructure.SC: np.array([
-        [0, 0, 1]
-    ]),
-    LatticeStructure.BCC: np.array([
-        [0, 0, 1]
-    ]),
-    LatticeStructure.FCC: np.array([
-        [0, 0, 0],
-        [0, 0, 1]
-    ])
-}
 
 
 @dataclass(eq=True, frozen=True)
