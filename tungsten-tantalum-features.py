@@ -18,7 +18,7 @@ OSZICAR_PATTERN = re.compile(
 
 
 def main():
-    root = Path(f"TaW_vasp_structs/TaW_vasp_structs/MC_structs")
+    root = Path(f"TaW_vasp_structs/MC_structs")
 
     feature_vectors = []
     energies = []
