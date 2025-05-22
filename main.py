@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from itertools import permutations, pairwise
+from itertools import permutations
 from time import perf_counter_ns
 
 import numpy as np
@@ -69,7 +69,7 @@ class Supercell:
         return positions.reshape(-1, 3)
 
     @lru_cache
-    def adjacency_tensors(self, max_order: int, tolerance: float = 0.01) -> sparse.COO:
+    def adjacency_tensors(self, max_order: int, tolerance: float = 1.0e-6) -> sparse.COO:
 
         """
         two-body adjacency tensors $A_{ij}^{(n)}$. computed by binning interatomic distances
@@ -83,13 +83,13 @@ class Supercell:
         distances.eliminate_zeros()
         distances = sparse.COO.from_scipy_sparse(distances)
 
-        _, edges = np.histogram(distances.data, bins=max_order)
+        bin_centers = self.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][1:max_order + 1]
 
         return sparse.stack([
             sparse.where(
-                sparse.logical_and(distances > (1.0 - tolerance) * low, distances < (1.0 + tolerance) * high),
+                sparse.logical_and(distances > (1.0 - tolerance) * center, distances < (1.0 + tolerance) * center),
                 x=True, y=False
-            ) for low, high in pairwise(edges)
+            ) for center in bin_centers
         ])
 
     @lru_cache
