@@ -17,11 +17,11 @@ OSZICAR_PATTERN = re.compile(
 
 
 def main():
-    root = Path(f"TaW_vasp_structs/MC_structs")
+    root = Path("TaW_vasp_structs/MC_structs")
 
     feature_vectors = []
     energies = []
-    for directory in root.glob(f"*_Ta*W*"):
+    for directory in root.glob("*_Ta*W*"):
 
         energy = None
         with (directory / "OSZICAR").open("r") as file:
