@@ -7,7 +7,6 @@ from scipy.spatial import KDTree
 import sparse
 from opt_einsum import contract
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 from constants import STRUCTURE_TO_THREE_BODY_LABELS, LatticeStructure
 
@@ -100,28 +99,88 @@ def main():
 
     feature_vectors = np.array(feature_vectors)
     energies = np.array(energies)
-    cluster_interaction_vector = np.linalg.pinv(feature_vectors) @ energies
 
-    predictions = feature_vectors @ cluster_interaction_vector
-
-    inaccuracy = np.linalg.norm(predictions - energies) / np.linalg.norm(energies - energies.mean())
-    pcc = 1.0 - inaccuracy ** 2
-    print(pcc)
-    print(len(feature_vectors))
-
-    plt.scatter(
-        energies, predictions, edgecolors="black", zorder=7, alpha=0.6
+    # 16-fold cross validation
+    k = 16
+    sqrt_k = int(np.sqrt(k))
+    assert sqrt_k == np.sqrt(k)
+    scatter_fig, scatter_axs = plt.subplots(
+        nrows=sqrt_k,
+        ncols=sqrt_k,
+        sharex=True,
+        sharey=True
     )
-    x = np.linspace(energies.min(), energies.max(), 10_000)
-    plt.plot(x, x, linestyle="--", color="black", zorder=6)
-    plt.grid()
-    plt.xlabel("TaW DFT energy (eV)")
-    plt.ylabel("TaW cluster expansion energy (eV)")
-    plt.tight_layout()
-    plt.savefig("fit.pdf")
+    residuals_fig, residuals_axs = plt.subplots(
+        nrows=sqrt_k,
+        ncols=sqrt_k,
+        sharex=True,
+        sharey=True
+    )
+    for i in range(k):
+
+        testing_slice = slice(len(energies) * i // k, len(energies) * (i + 1) // k)
+        
+        feature_vectors_training = np.delete(feature_vectors, testing_slice, axis=0)
+        energies_training = np.delete(energies, testing_slice, axis=0)
+        cluster_interaction_vector = np.linalg.pinv(feature_vectors_training) @ energies_training
+
+        feature_vectors_testing = feature_vectors[testing_slice, :]
+        energies_testing = energies[testing_slice]
+
+        predicted_energies = feature_vectors_testing @ cluster_interaction_vector
+
+        predicted_energies_training = feature_vectors_training @ cluster_interaction_vector
+        ax_idx = (i % sqrt_k, i // sqrt_k)
+        training_scatter = scatter_axs[ax_idx].scatter(
+            energies_training, predicted_energies_training, edgecolors="black", zorder=6, alpha=0.1,
+            marker="o"
+        )
+        testing_scatter = scatter_axs[ax_idx].scatter(
+            energies_testing, predicted_energies, edgecolors="black", zorder=7, alpha=0.6,
+            marker="s"
+        )
+        x = np.linspace(energies.min(), energies.max(), 10_000)
+        scatter_axs[ax_idx].plot(x, x, linestyle="--", color="black", zorder=6)
+    
+        scatter_axs[ax_idx].grid()
+
+        testing_residuals = predicted_energies - energies_testing
+        training_residuals = predicted_energies_training - energies_training
+
+        training_residual = residuals_axs[ax_idx].scatter(
+            energies_training, training_residuals, edgecolors="black", zorder=6, alpha=0.1,
+            marker="o"
+        )
+        testing_residual = residuals_axs[ax_idx].scatter(
+            energies_testing, testing_residuals, edgecolors="black", zorder=7, alpha=0.6,
+            marker="s"
+        )
+        residuals_axs[ax_idx].grid()
+    scatter_fig.legend(
+        handles=[training_scatter, testing_scatter],
+        labels=["training", "testing"],
+        loc="upper center",
+        ncols=2
+    )
+
+    scatter_fig.supxlabel("TaW DFT energy (eV)")
+    scatter_fig.supylabel("TaW cluster expansion energy (eV)")
+    scatter_fig.tight_layout()
+    scatter_fig.savefig("figures/cross-validation.pdf")
+
+    residuals_fig.legend(
+        handles=[training_residual, testing_residual],
+        labels=["training", "testing"],
+        loc="upper center",
+        ncols=2
+    )
+
+    residuals_fig.supxlabel("TaW cluster expansion energy (eV)")
+    residuals_fig.supylabel("Residuals (eV)")
+    residuals_fig.tight_layout()
+    residuals_fig.savefig("figures/residual-plot.pdf")
 
 
 if __name__ == "__main__":
 
-    mpl.use("TkAgg")
     main()

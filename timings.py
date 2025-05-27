@@ -8,7 +8,6 @@ from scipy.spatial import KDTree
 import sparse
 from opt_einsum import contract
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 from scipy.stats import linregress
 
 from constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS
@@ -294,10 +293,9 @@ def main():
     plt.legend()
     plt.grid()
     plt.tight_layout()
-    plt.savefig("perf.pdf", bbox_inches="tight")
+    plt.savefig("figures/perf.pdf", bbox_inches="tight")
 
 
 if __name__ == "__main__":
 
-    mpl.use("TkAgg")
     main()
