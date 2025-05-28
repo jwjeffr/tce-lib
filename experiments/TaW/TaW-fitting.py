@@ -15,7 +15,7 @@ OSZICAR_PATTERN = re.compile(
 
 
 def main():
-    root = Path("TaW_vasp_structs/MC_structs")
+    root = Path("vasp-structures/MC_structs")
 
     feature_vectors = []
     energies = []
@@ -143,7 +143,7 @@ def main():
     scatter_fig.supxlabel("TaW DFT energy (eV)")
     scatter_fig.supylabel("TaW cluster expansion energy (eV)")
     scatter_fig.tight_layout()
-    scatter_fig.savefig("figures/cross-validation.pdf", bbox_inches="tight")
+    scatter_fig.savefig("cross-validation.pdf", bbox_inches="tight")
 
     residuals_fig.legend(
         handles=[training_residual, testing_residual],
@@ -156,7 +156,7 @@ def main():
     residuals_fig.supxlabel("TaW cluster expansion energy (eV)")
     residuals_fig.supylabel("Residuals (eV)")
     residuals_fig.tight_layout()
-    residuals_fig.savefig("figures/residual-plot.pdf", bbox_inches="tight")
+    residuals_fig.savefig("residual-plot.pdf", bbox_inches="tight")
 
 
 if __name__ == "__main__":

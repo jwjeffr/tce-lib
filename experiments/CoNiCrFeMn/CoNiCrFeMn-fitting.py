@@ -7,7 +7,7 @@ from tce import topology
 
 
 def main():
-    root = Path("CoNiCrFeMn_lammps")
+    root = Path("lammps-data")
 
     feature_vectors = []
     energies = []
