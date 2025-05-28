@@ -141,7 +141,7 @@ def main():
         )
         x = np.linspace(energies.min(), energies.max(), 10_000)
         scatter_axs[ax_idx].plot(x, x, linestyle="--", color="black", zorder=6)
-    
+        scatter_axs[ax_idx].tick_params(axis="x", labelrotation=45)
         scatter_axs[ax_idx].grid()
 
         testing_residuals = predicted_energies - energies_testing
@@ -156,29 +156,33 @@ def main():
             marker="s"
         )
         residuals_axs[ax_idx].grid()
-    scatter_fig.legend(
+        residuals_axs[ax_idx].tick_params(axis="x", labelrotation=45)
+    
+    leg = scatter_fig.legend(
         handles=[training_scatter, testing_scatter],
         labels=["training", "testing"],
         loc="upper center",
+        bbox_to_anchor=(0.5, 1.05),
         ncols=2
     )
 
     scatter_fig.supxlabel("TaW DFT energy (eV)")
     scatter_fig.supylabel("TaW cluster expansion energy (eV)")
     scatter_fig.tight_layout()
-    scatter_fig.savefig("figures/cross-validation.pdf")
+    scatter_fig.savefig("figures/cross-validation.pdf", bbox_inches="tight")
 
     residuals_fig.legend(
         handles=[training_residual, testing_residual],
         labels=["training", "testing"],
         loc="upper center",
+        bbox_to_anchor=(0.5, 1.05),
         ncols=2
     )
 
     residuals_fig.supxlabel("TaW cluster expansion energy (eV)")
     residuals_fig.supylabel("Residuals (eV)")
     residuals_fig.tight_layout()
-    residuals_fig.savefig("figures/residual-plot.pdf")
+    residuals_fig.savefig("figures/residual-plot.pdf", bbox_inches="tight")
 
 
 if __name__ == "__main__":
