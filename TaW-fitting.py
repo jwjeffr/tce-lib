@@ -1,14 +1,12 @@
 from pathlib import Path
 import re
-from itertools import pairwise, permutations
 
 import numpy as np
-from scipy.spatial import KDTree
-import sparse
-from opt_einsum import contract
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
-from constants import STRUCTURE_TO_THREE_BODY_LABELS, LatticeStructure
+from tce.constants import LatticeStructure
+from tce import topology
 
 
 OSZICAR_PATTERN = re.compile(
@@ -48,52 +46,28 @@ def main():
         # compute adjacency matrix
         cell_matrix = np.loadtxt(poscar_path, skiprows=2, max_rows=3)
         positions *= 0.99
-        tree = KDTree(positions, boxsize=np.diag(cell_matrix))
-        distances = tree.sparse_distance_matrix(tree, max_distance=4.0).tocsr()
-        distances.eliminate_zeros()
-        distances = sparse.COO.from_scipy_sparse(distances)
-        _, edges = np.histogram(distances.data, bins=2)
 
-        tolerance = 0.01
-        adjacency_tensors = sparse.stack([
-            sparse.where(
-                sparse.logical_and(distances > (1.0 - tolerance) * low, distances < (1.0 + tolerance) * high),
-                x=True, y=False
-            ) for low, high in pairwise(edges)
-        ])
+        adjacency_tensors = topology.get_adjacency_tensors_binning(
+            positions=positions,
+            boxsize=np.diag(cell_matrix),
+            max_distance=4.0,
+            max_adjacency_order=2
+        )
 
-        three_body_labels = [
-            STRUCTURE_TO_THREE_BODY_LABELS[LatticeStructure.BCC][order] for order in range(1)
-        ]
-
-        three_body_tensors = sparse.stack([
-            sum(
-                sparse.einsum(
-                    "ij,jk,ki->ijk",
-                    adjacency_tensors[i],
-                    adjacency_tensors[j],
-                    adjacency_tensors[k]
-                ) for i, j, k in set(permutations(labels))
-            ) for labels in three_body_labels
-        ])
+        three_body_tensors = topology.get_three_body_tensors(
+            lattice_structure=LatticeStructure.BCC,
+            adjacency_tensors=adjacency_tensors,
+            max_three_body_order=1
+        )
 
         state_matrix = np.zeros((128, 2), dtype=int)
         state_matrix[np.arange(128), types] = 1
-        feature_vector = np.concatenate([
-            contract(
-                "nij,iα,jβ->nαβ",
-                adjacency_tensors,
-                state_matrix,
-                state_matrix
-            ).flatten(),
-            contract(
-                "nijk,iα,jβ,kγ->nαβγ",
-                three_body_tensors,
-                state_matrix,
-                state_matrix,
-                state_matrix
-            ).flatten()
-        ])
+
+        feature_vector = topology.get_feature_vector(
+            adjacency_tensors=adjacency_tensors,
+            three_body_tensors=three_body_tensors,
+            state_matrix=state_matrix
+        )
 
         feature_vectors.append(feature_vector)
 
@@ -158,7 +132,7 @@ def main():
         residuals_axs[ax_idx].grid()
         residuals_axs[ax_idx].tick_params(axis="x", labelrotation=45)
     
-    leg = scatter_fig.legend(
+    scatter_fig.legend(
         handles=[training_scatter, testing_scatter],
         labels=["training", "testing"],
         loc="upper center",
@@ -187,4 +161,5 @@ def main():
 
 if __name__ == "__main__":
 
+    mpl.use("TkAgg")
     main()

@@ -1,12 +1,9 @@
 from pathlib import Path
-from itertools import permutations
 
 import numpy as np
-from scipy.spatial import KDTree
-import sparse
-from opt_einsum import contract
 
-from constants import STRUCTURE_TO_THREE_BODY_LABELS, LatticeStructure, STRUCTURE_TO_CUTOFF_LISTS
+from tce.constants import LatticeStructure
+from tce import topology
 
 
 def main():
@@ -39,54 +36,24 @@ def main():
                     zlo, zhi, _, __ = line.split()
                     boxsize[2] = float(zhi)
                     continue
-        tree = KDTree(positions, boxsize=boxsize)
-        distances = tree.sparse_distance_matrix(tree, max_distance=4.0).tocsr()
-        distances.eliminate_zeros()
-        distances = sparse.COO.from_scipy_sparse(distances)
 
-        cutoffs = [3.59 * c for c in STRUCTURE_TO_CUTOFF_LISTS[LatticeStructure.FCC]]
-        cutoffs.pop(0)
-
-        tolerance = 0.01
-        adjacency_tensors = sparse.stack([
-            sparse.where(
-                sparse.logical_and(distances > (1.0 - tolerance) * c, distances < (1.0 + tolerance) * c),
-                x=True, y=False
-            ) for c in cutoffs[:2]
-        ])
-
-        three_body_labels = [
-            STRUCTURE_TO_THREE_BODY_LABELS[LatticeStructure.FCC][order] for order in range(1)
-        ]
-
-        three_body_tensors = sparse.stack([
-            sum(
-                sparse.einsum(
-                    "ij,jk,ki->ijk",
-                    adjacency_tensors[i],
-                    adjacency_tensors[j],
-                    adjacency_tensors[k]
-                ) for i, j, k in set(permutations(labels))
-            ) for labels in three_body_labels
-        ])
+        adjacency_tensors = topology.get_adjacency_tensors_shelling(
+            positions=positions,
+            boxsize=boxsize,
+            max_distance=4.0,
+            lattice_parameter=3.59,
+            lattice_structure=LatticeStructure.FCC,
+            max_adjacency_order=2
+        )
+        three_body_tensors = topology.get_three_body_tensors(
+            lattice_structure=LatticeStructure.FCC,
+            adjacency_tensors=adjacency_tensors,
+            max_three_body_order=1
+        )
 
         state_matrix = np.zeros((300, 5), dtype=int)
         state_matrix[np.arange(300), types - 1] = 1
-        feature_vector = np.concatenate([
-            contract(
-                "nij,iα,jβ->nαβ",
-                adjacency_tensors,
-                state_matrix,
-                state_matrix
-            ).flatten(),
-            contract(
-                "nijk,iα,jβ,kγ->nαβγ",
-                three_body_tensors,
-                state_matrix,
-                state_matrix,
-                state_matrix
-            ).flatten()
-        ])
+        feature_vector = topology.get_feature_vector(adjacency_tensors, three_body_tensors, state_matrix)
 
         feature_vectors.append(feature_vector)
 

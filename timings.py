@@ -1,36 +1,15 @@
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from itertools import permutations
 from time import perf_counter_ns
 
 import numpy as np
-from scipy.spatial import KDTree
 import sparse
-from opt_einsum import contract
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from scipy.stats import linregress
 
-from constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS
-
-
-def symmetrize(tensor: sparse.COO, axes=None) -> sparse.COO:
-
-    r"""
-    symmetrize a tensor $T$:
-
-    $$T_{(i_1 i_2 \cdots i_n)} = \frac{1}{n!}\sum_{\sigma\in S_n} T_{\sigma(i_1) \sigma(i_2) \cdots \sigma(i_n)}$$
-
-    where $S_n$ is the symmetric group on $n$ elements, so we are summing over the permutations of the indices.
-
-    e.g. $T_{(12)} = \frac{T_{12} + T_{21}}{2}$, or equivalently $\text{symmetrize}(T) = \frac{T + T^\intercal}{2}$
-    """
-
-    if not axes:
-        axes = tuple(range(tensor.ndim))
-
-    perms = list(permutations(axes))
-
-    return sum(sparse.moveaxis(tensor, axes, perm) for perm in perms) / len(perms)
+from tce.constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS
+from tce import topology
 
 
 @dataclass(eq=True, frozen=True)
@@ -74,22 +53,15 @@ class Supercell:
         two-body adjacency tensors $A_{ij}^{(n)}$. computed by binning interatomic distances
         """
 
-        tree = KDTree(data=self.positions, boxsize=self.lattice_parameter * np.array(self.size))
-        distances = tree.sparse_distance_matrix(
-            tree,
-            max_distance=self.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][max_order]
-        ).tocsr()
-        distances.eliminate_zeros()
-        distances = sparse.COO.from_scipy_sparse(distances)
-
-        bin_centers = self.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][1:max_order + 1]
-
-        return sparse.stack([
-            sparse.where(
-                sparse.logical_and(distances > (1.0 - tolerance) * center, distances < (1.0 + tolerance) * center),
-                x=True, y=False
-            ) for center in bin_centers
-        ])
+        return topology.get_adjacency_tensors_shelling(
+            positions=self.positions,
+            boxsize=self.lattice_parameter * np.array(self.size),
+            max_distance=self.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][max_order],
+            lattice_parameter=self.lattice_parameter,
+            lattice_structure=self.lattice_structure,
+            max_adjacency_order=max_order,
+            tolerance=tolerance
+        )
 
     @lru_cache
     def three_body_tensors(self, max_order: int) -> sparse.COO:
@@ -104,22 +76,15 @@ class Supercell:
         the labels
         """
 
-        # precompute adjacency tensors
         three_body_labels = [
             STRUCTURE_TO_THREE_BODY_LABELS[self.lattice_structure][order] for order in range(max_order)
         ]
-        adjacency_tensors = self.adjacency_tensors(max_order=np.concatenate(three_body_labels).max() + 1)
 
-        return sparse.stack([
-            sum(
-                sparse.einsum(
-                    "ij,jk,ki->ijk",
-                    adjacency_tensors[i],
-                    adjacency_tensors[j],
-                    adjacency_tensors[k]
-                ) for i, j, k in set(permutations(labels))
-            ) for labels in three_body_labels
-        ])
+        return topology.get_three_body_tensors(
+            lattice_structure=self.lattice_structure,
+            adjacency_tensors=self.adjacency_tensors(max_order=np.concatenate(three_body_labels).max() + 1),
+            max_three_body_order=max_order
+        )
 
     def feature_vector(
         self,
@@ -132,21 +97,11 @@ class Supercell:
         feature vector extracting topological features. fancy name for number of bonds, and number of triplets
         """
 
-        return np.concatenate([
-            contract(
-                "nij,iα,jβ->nαβ",
-                self.adjacency_tensors(max_order=max_adjacency_order),
-                state_matrix,
-                state_matrix
-            ).flatten(),
-            contract(
-                "nijk,iα,jβ,kγ->nαβγ",
-                self.three_body_tensors(max_order=max_triplet_order),
-                state_matrix,
-                state_matrix,
-                state_matrix
-            ).flatten()
-        ])
+        return topology.get_feature_vector(
+            adjacency_tensors=self.adjacency_tensors(max_order=max_adjacency_order),
+            three_body_tensors=self.three_body_tensors(max_order=max_triplet_order),
+            state_matrix=state_matrix
+        )
 
     def clever_feature_diff(
         self,
@@ -161,49 +116,12 @@ class Supercell:
         contraction, only caring about "active" sites, or lattice sites that changed
         """
 
-        sites, _ = np.where(initial_state_matrix != final_state_matrix)
-        sites = np.unique(sites).tolist()
-
-        truncated_adj = sparse.take(self.adjacency_tensors(max_order=max_adjacency_order), sites, axis=1)
-        truncated_thr = sparse.take(self.three_body_tensors(max_order=max_triplet_order), sites, axis=1)
-
-        initial_feature_vec_truncated = np.concatenate(
-            [
-                2 * symmetrize(contract(
-                    "nij,iα,jβ->nαβ",
-                    truncated_adj,
-                    initial_state_matrix[sites, :],
-                    initial_state_matrix
-                ), axes=(1, 2)).flatten(),
-                3 * symmetrize(contract(
-                    "nijk,iα,jβ,kγ->nαβγ",
-                    truncated_thr,
-                    initial_state_matrix[sites, :],
-                    initial_state_matrix,
-                    initial_state_matrix
-                ), axes=(1, 2, 3)).flatten()
-            ]
+        return topology.get_feature_vector_difference(
+            adjacency_tensors=self.adjacency_tensors(max_order=max_adjacency_order),
+            three_body_tensors=self.three_body_tensors(max_order=max_triplet_order),
+            initial_state_matrix=initial_state_matrix,
+            final_state_matrix=final_state_matrix
         )
-
-        final_feature_vec_truncated = np.concatenate(
-            [
-                2 * symmetrize(contract(
-                    "nij,iα,jβ->nαβ",
-                    truncated_adj,
-                    final_state_matrix[sites, :],
-                    final_state_matrix
-                ), axes=(1, 2)).flatten(),
-                3 * symmetrize(contract(
-                    "nijk,iα,jβ,kγ->nαβγ",
-                    truncated_thr,
-                    final_state_matrix[sites, :],
-                    final_state_matrix,
-                    final_state_matrix
-                ), axes=(1, 2, 3)).flatten()
-            ]
-        )
-
-        return final_feature_vec_truncated - initial_feature_vec_truncated
 
 
 def main():
@@ -298,4 +216,5 @@ def main():
 
 if __name__ == "__main__":
 
+    mpl.use("TkAgg")
     main()
