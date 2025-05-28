@@ -1,0 +1,20 @@
+${header}
+
+${num_atoms} atoms
+${num_types} atom types
+
+${xlo} ${xhi} xlo xhi
+${ylo} ${yhi} ylo yhi
+${zlo} ${zhi} zlo zhi
+
+Masses
+
+${masses}
+
+Atoms # atomic
+
+${position_data}
+
+Velocities
+
+${velocity_data}
