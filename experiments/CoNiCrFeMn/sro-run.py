@@ -34,6 +34,8 @@ def main():
 
         if not (step + 1) % dump_every:
 
+            print(step + 1)
+
             _, types = np.where(state_matrix == 1)
 
             with StringIO() as s:

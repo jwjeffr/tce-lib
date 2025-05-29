@@ -74,11 +74,10 @@ def main():
             ax.plot(sro_params[:, j, i], color='black')
 
     fig.tight_layout()
-    plt.show()
+    fig.savefig("cluster-expansion-mc.pdf", bbox_inches="tight")
 
 
 if __name__ == '__main__':
 
-    # need to use Agg or else matplotlib conflicts with ovito
     mpl.use('TkAgg')
     main()
