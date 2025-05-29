@@ -118,3 +118,33 @@ class Supercell:
             initial_state_matrix=initial_state_matrix,
             final_state_matrix=final_state_matrix
         )
+
+
+@dataclass(eq=True, frozen=True)
+class NonCubicSupercell(Supercell):
+
+    lattice_vectors: np.typing.NDArray
+
+    @cached_property
+    def positions(self) -> np.typing.NDArray[np.floating]:
+        """
+        positions of lattice sites
+        create a meshgrid of unit cell positions, and add lattice sites at atomic basis positions in each unit cell
+        """
+
+        nx, ny, nz = self.size
+        i, j, k = np.meshgrid(np.arange(nx), np.arange(ny), np.arange(nz), indexing='ij')
+        cell_indices = np.stack([i, j, k], axis=-1).reshape(-1, 3)
+
+        # Convert to Cartesian origins
+        lattice_origins = cell_indices @ self.lattice_vectors
+        n_cells = len(lattice_origins)
+
+        # Tile and compute positions
+        basis = STRUCTURE_TO_ATOMIC_BASIS[self.lattice_structure]
+        origins = np.repeat(lattice_origins, len(basis), axis=0)
+        basis_cart = basis @ self.lattice_vectors
+        basis_vectors = np.tile(basis_cart, (n_cells, 1))
+
+        positions = origins + basis_vectors
+        return positions
