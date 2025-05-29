@@ -7,7 +7,7 @@ import numpy as np
 
 def main():
 
-    a = 2.5
+    a = 3.15
     c = np.sqrt(8.0 / 3.0) * a
     rng = np.random.default_rng(seed=0)
 
