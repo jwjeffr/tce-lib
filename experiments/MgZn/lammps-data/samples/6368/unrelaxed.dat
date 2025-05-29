@@ -1,7 +1,7 @@
 (written by ASE)
 
 200 atoms
-1 atom types
+2 atom types
 
 0.0                   15.75  xlo xhi
 0.0      13.639900109604907  ylo yhi
@@ -11,6 +11,7 @@
 Masses
 
      1      24.304999993747675 # Mg
+     2      65.379999983181364 # Zn
 
 Atoms # atomic
 
