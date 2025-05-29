@@ -1,5 +1,5 @@
 from itertools import permutations, pairwise
-from typing import List, Sequence
+from typing import Sequence
 
 from scipy.spatial import KDTree
 import numpy as np
@@ -62,7 +62,7 @@ def get_distance_matrix(
 
 def get_three_body_tensors(
         lattice_structure: LatticeStructure,
-        adjacency_tensors: List[sparse.COO],
+        adjacency_tensors: sparse.COO,
         max_three_body_order: int,
 ) -> sparse.COO:
 
