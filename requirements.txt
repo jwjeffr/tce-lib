@@ -5,3 +5,4 @@ scipy~=1.15.3
 opt-einsum~=3.4.0
 ovito~=3.12.4
 cowley-sro-parameters~=1.1.1
+ase~=3.25.0
