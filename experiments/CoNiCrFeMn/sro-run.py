@@ -32,9 +32,9 @@ def main():
 
     for step in range(num_steps):
 
-        if not (step + 1) % dump_every:
+        if not step % dump_every:
 
-            print(step + 1)
+            print(step)
 
             _, types = np.where(state_matrix == 1)
 
@@ -73,7 +73,7 @@ def main():
                 }
             )
 
-            with (Path("sim") / f"cluster_expansion-{step + 1:.0f}.dat").open("w") as file:
+            with (Path("sim") / f"cluster_expansion-{step:.0f}.dat").open("w") as file:
                 file.write(data_str)
 
         new_state_matrix = state_matrix.copy()
