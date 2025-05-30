@@ -84,11 +84,8 @@ def main():
     ax.set_axis_off()
     plt.tight_layout()
 
-    # Show plot
-    plt.show()
-
     # To save as PNG uncomment the next line:
-    # fig.savefig('simple_cubic_with_bonds.png', dpi=300)
+    fig.savefig('simple-cubic.png', dpi=800, bbox_inches="tight")
 
 
 if __name__ == "__main__":
