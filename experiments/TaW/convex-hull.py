@@ -20,6 +20,8 @@ def main():
 
     feature_vectors = []
     energies = []
+    w_concentrations_dft = []
+
     for directory in root.glob("*_Ta*W*"):
 
         energy = None
@@ -40,6 +42,7 @@ def main():
             lines = file.readlines()
         num_tantalum, num_tungsten = lines[6].strip().split()
         num_tantalum, num_tungsten = int(num_tantalum), int(num_tungsten)
+        w_concentrations_dft.append(num_tungsten / (num_tungsten + num_tantalum))
         types = np.concatenate(
             (0 * np.ones(num_tantalum, dtype=int), 1 * np.ones(num_tungsten, dtype=int))
         )
@@ -74,6 +77,7 @@ def main():
 
     feature_vectors = np.array(feature_vectors)
     energies = np.array(energies)
+    w_concentrations_dft = np.array(w_concentrations_dft)
 
     interaction_vector = np.linalg.pinv(feature_vectors) @ energies
 
@@ -110,8 +114,15 @@ def main():
 
     plt.scatter(tungsten_concentrations, enthalpy_of_mixing, alpha=0.3, edgecolors="black", zorder=7, label="cluster expansion")
     plt.gca().add_collection(
-        LineCollection(segments, colors="black", linestyles="-", zorder=8, label="convex hull")
+        LineCollection(segments, colors="black", linestyles="-", zorder=8, label="CE convex hull")
     )
+
+    # dft data as well
+    ta_ref = -11.8619
+    w_ref = -13.0112
+    enthalpy_of_mixing_dft = energies / 128 - (1.0 - w_concentrations_dft) * ta_ref - w_concentrations_dft * w_ref
+    plt.scatter(100 * w_concentrations_dft, enthalpy_of_mixing_dft, zorder=9, label="DFT", alpha=0.3, edgecolors="black", marker="s")
+
     plt.xlabel("W Concentration (at. %)")
     plt.ylabel("Enthalpy of mixing (eV / atom)")
     ax = plt.gca()
