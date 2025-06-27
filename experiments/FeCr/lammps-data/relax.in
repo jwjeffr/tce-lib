@@ -1,0 +1,27 @@
+# FCC CoNiCrFeMn alloy with MEAM potential
+
+units           metal
+dimension       3
+boundary        p p p
+atom_style      atomic
+
+read_data unrelaxed.dat
+
+# Neighbor list
+neighbor        2.0 bin
+neigh_modify    delay 0 every 1 check yes
+
+# Define MEAM potential
+pair_style      meam
+pair_coeff      * * ../../library.meam Co Ni Cr Fe Mn ../../CoNiCrFeMn.meam Co Ni Cr Fe Mn
+
+thermo 10
+variable E equal pe
+
+# Relaxation
+min_style       cg
+fix 1 all box/relax iso 0.0 vmax 0.001
+minimize        1e-10 1e-10 1000 10000
+
+print "${E}" file energy.txt
+
