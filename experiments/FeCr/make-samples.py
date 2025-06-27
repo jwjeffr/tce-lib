@@ -26,11 +26,11 @@ def main():
     grid = np.linspace(low, high, grid_spacing)
 
     generator = np.random.default_rng(seed=0)
-    for composition in product(grid, repeat=4):
-        composition = (1.0 - sum(composition), *composition)
+    for composition in grid:
+        composition = (1.0 - composition, composition)
         if not all(x >= low for x in composition):
             continue
-        types = generator.choice(np.arange(5), p=composition, size=supercell.num_sites)
+        types = generator.choice(np.arange(2), p=composition, size=supercell.num_sites)
 
         with StringIO() as s:
             position_data = np.vstack(
