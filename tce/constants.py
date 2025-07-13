@@ -45,15 +45,18 @@ STRUCTURE_TO_CUTOFF_LISTS: Dict[LatticeStructure, np.typing.NDArray[np.floating]
 @cache
 def load_three_body_labels(
         tolerance: float = 0.01,
-        size: tuple[int, int, int] = (5, 5, 5)
+        min_num_sites: int = 125,
 ) -> Dict[LatticeStructure, np.typing.NDArray[np.integer]]:
-
-    i, j, k = (np.arange(s) for s in size)
-
-    unit_cell_positions = np.array(np.meshgrid(i, j, k, indexing='ij')).reshape(3, -1).T
 
     label_dict = {}
     for lattice_structure in LatticeStructure:
+
+        min_num_unit_cells = min_num_sites // len(STRUCTURE_TO_ATOMIC_BASIS[lattice_structure])
+        s = np.ceil(np.cbrt(min_num_unit_cells))
+        size = (s, s, s)
+        i, j, k = (np.arange(s) for s in size)
+        unit_cell_positions = np.array(np.meshgrid(i, j, k, indexing='ij')).reshape(3, -1).T
+
         cutoffs = STRUCTURE_TO_CUTOFF_LISTS[lattice_structure]
         positions = unit_cell_positions[:, np.newaxis, :] + \
             STRUCTURE_TO_ATOMIC_BASIS[lattice_structure][np.newaxis, :, :]
@@ -88,26 +91,10 @@ def load_three_body_labels(
                 continue
             non_zero_labels.append(list(labels))
 
-        non_zero_labels.sort(key=sum)
+        non_zero_labels.sort(key=lambda x: (max(x), x))
         label_dict[lattice_structure] = np.array(non_zero_labels)
 
     return label_dict
 
 
 STRUCTURE_TO_THREE_BODY_LABELS = load_three_body_labels()
-"""STRUCTURE_TO_THREE_BODY_LABELS: Dict[LatticeStructure, np.typing.NDArray[np.integer]] = {
-    LatticeStructure.SC: np.array([
-        [0, 0, 1],
-        [1, 1, 1]
-    ]),
-    LatticeStructure.BCC: np.array([
-        [0, 0, 1],
-        [0, 0, 2],
-        [1, 1, 2],
-        [2, 2, 2]
-    ]),
-    LatticeStructure.FCC: np.array([
-        [0, 0, 0],
-        [0, 0, 1]
-    ])
-}"""
