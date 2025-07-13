@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from functools import cached_property, lru_cache
 
 import numpy as np
-from scipy.spatial import KDTree
 import sparse
 
 from .constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS
@@ -43,24 +42,20 @@ class Supercell:
             STRUCTURE_TO_ATOMIC_BASIS[self.lattice_structure][np.newaxis, :, :]
         return self.lattice_parameter * positions.reshape(-1, 3)
 
-    @cached_property
-    def tree(self) -> KDTree:
-
-        return KDTree(data=self.positions, boxsize=self.lattice_parameter * np.array(self.size))
-
     @lru_cache
-    def adjacency_tensors(self, tolerance: float = 1.0e-6) -> sparse.COO:
+    def adjacency_tensors(self, max_order: int, tolerance: float = 1.0e-6) -> sparse.COO:
 
         """
         two-body adjacency tensors $A_{ij}^{(n)}$. computed by binning interatomic distances
         """
 
-        cutoffs = [self.lattice_parameter * cutoff for cutoff in STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure]]
-        cutoffs.pop(0)
-
         return topology.get_adjacency_tensors(
-            tree=self.tree,
-            cutoffs=cutoffs,
+            positions=self.positions,
+            boxsize=self.lattice_parameter * np.array(self.size),
+            max_distance=self.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][max_order],
+            lattice_parameter=self.lattice_parameter,
+            lattice_structure=self.lattice_structure,
+            max_adjacency_order=max_order,
             tolerance=tolerance
         )
 
@@ -83,7 +78,7 @@ class Supercell:
 
         return topology.get_three_body_tensors(
             lattice_structure=self.lattice_structure,
-            adjacency_tensors=self.adjacency_tensors(),
+            adjacency_tensors=self.adjacency_tensors(max_order=np.concatenate(three_body_labels).max() + 1),
             max_three_body_order=max_order
         )
 
@@ -99,7 +94,7 @@ class Supercell:
         """
 
         return topology.get_feature_vector(
-            adjacency_tensors=self.adjacency_tensors(),
+            adjacency_tensors=self.adjacency_tensors(max_order=max_adjacency_order),
             three_body_tensors=self.three_body_tensors(max_order=max_triplet_order),
             state_matrix=state_matrix
         )
@@ -118,7 +113,7 @@ class Supercell:
         """
 
         return topology.get_feature_vector_difference(
-            adjacency_tensors=self.adjacency_tensors(),
+            adjacency_tensors=self.adjacency_tensors(max_order=max_adjacency_order),
             three_body_tensors=self.three_body_tensors(max_order=max_triplet_order),
             initial_state_matrix=initial_state_matrix,
             final_state_matrix=final_state_matrix
