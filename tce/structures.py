@@ -81,7 +81,7 @@ class Supercell:
 
     def feature_vector(
         self,
-        state_matrix: np.typing.NDArray[np.integer],
+        state_matrix: sparse.COO,
         max_adjacency_order: int,
         max_triplet_order: int
     ) -> np.typing.NDArray[np.integer]:
@@ -98,8 +98,8 @@ class Supercell:
 
     def clever_feature_diff(
         self,
-        initial_state_matrix: np.typing.NDArray[np.integer],
-        final_state_matrix: np.typing.NDArray[np.integer],
+        initial_state_matrix: sparse.COO,
+        final_state_matrix: sparse.COO,
         max_adjacency_order: int,
         max_triplet_order: int,
     ) -> np.typing.NDArray[np.floating]:
