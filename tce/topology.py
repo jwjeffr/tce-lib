@@ -11,11 +11,10 @@ from .constants import LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS
 
 def get_adjacency_tensors(
         tree: KDTree,
-        max_distance: float,
         cutoffs: Sequence[float],
         tolerance: float = 0.01
 ) -> sparse.COO:
-    distances = tree.sparse_distance_matrix(tree, max_distance=max_distance).tocsr()
+    distances = tree.sparse_distance_matrix(tree, max_distance=cutoffs[-1]).tocsr()
     distances.eliminate_zeros()
     distances = sparse.COO.from_scipy_sparse(distances)
 
