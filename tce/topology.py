@@ -1,4 +1,4 @@
-from itertools import permutations, pairwise
+from itertools import permutations
 from typing import Sequence
 
 from scipy.spatial import KDTree
@@ -6,7 +6,7 @@ import numpy as np
 import sparse
 from opt_einsum import contract
 
-from .constants import STRUCTURE_TO_CUTOFF_LISTS, LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS
+from .constants import LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS
 
 
 def get_adjacency_tensors(
@@ -18,8 +18,6 @@ def get_adjacency_tensors(
     distances = tree.sparse_distance_matrix(tree, max_distance=(1.0 + tolerance) * cutoffs[-1]).tocsr()
     distances.eliminate_zeros()
     distances = sparse.COO.from_scipy_sparse(distances)
-    """cutoffs = [lattice_parameter * c for c in STRUCTURE_TO_CUTOFF_LISTS[lattice_structure]]
-    cutoffs.pop(0)"""
 
     return sparse.stack([
         sparse.where(
