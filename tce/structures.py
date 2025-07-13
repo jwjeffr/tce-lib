@@ -49,7 +49,7 @@ class Supercell:
         two-body adjacency tensors $A_{ij}^{(n)}$. computed by binning interatomic distances
         """
 
-        return topology.get_adjacency_tensors(
+        return topology.get_adjacency_tensors_shelling(
             positions=self.positions,
             boxsize=self.lattice_parameter * np.array(self.size),
             max_distance=self.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][max_order],
