@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import cached_property, lru_cache
 
 import numpy as np
+from scipy.spatial import KDTree
 import sparse
 
 from .constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS
@@ -49,13 +50,9 @@ class Supercell:
         two-body adjacency tensors $A_{ij}^{(n)}$. computed by binning interatomic distances
         """
 
-        return topology.get_adjacency_tensors_shelling(
-            positions=self.positions,
-            boxsize=self.lattice_parameter * np.array(self.size),
-            max_distance=self.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][max_order],
-            lattice_parameter=self.lattice_parameter,
-            lattice_structure=self.lattice_structure,
-            max_adjacency_order=max_order,
+        return topology.get_adjacency_tensors(
+            tree=KDTree(self.positions, boxsize=self.lattice_parameter * np.array(self.size)),
+            cutoffs=[self.lattice_parameter * c for c in STRUCTURE_TO_CUTOFF_LISTS[self.lattice_structure][:max_order]],
             tolerance=tolerance
         )
 

@@ -9,55 +9,24 @@ from opt_einsum import contract
 from .constants import STRUCTURE_TO_CUTOFF_LISTS, LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS
 
 
-def get_adjacency_tensors_binning(
-        positions: np.typing.NDArray,
-        boxsize: Sequence[float],
-        max_distance: float,
-        max_adjacency_order: int,
+def get_adjacency_tensors(
+        tree: KDTree,
+        cutoffs: Sequence[float],
         tolerance: float = 0.01
 ) -> sparse.COO:
-    distances = get_distance_matrix(positions, boxsize, max_distance)
-    _, edges = np.histogram(distances.data, bins=max_adjacency_order)
 
-    return sparse.stack([
-        sparse.where(
-            sparse.logical_and(distances > (1.0 - tolerance) * low, distances < (1.0 + tolerance) * high),
-            x=True, y=False
-        ) for low, high in pairwise(edges)
-    ])
-
-
-def get_adjacency_tensors_shelling(
-        positions: np.typing.NDArray,
-        boxsize: Sequence[float],
-        max_distance: float,
-        lattice_parameter: float,
-        lattice_structure: LatticeStructure,
-        max_adjacency_order: int,
-        tolerance: float = 0.01
-) -> sparse.COO:
-    distances = get_distance_matrix(positions, boxsize, max_distance)
-    cutoffs = [lattice_parameter * c for c in STRUCTURE_TO_CUTOFF_LISTS[lattice_structure]]
-    cutoffs.pop(0)
+    distances = tree.sparse_distance_matrix(tree, max_distance=(1.0 + tolerance) * cutoffs[-1]).tocsr()
+    distances.eliminate_zeros()
+    distances = sparse.COO.from_scipy_sparse(distances)
+    """cutoffs = [lattice_parameter * c for c in STRUCTURE_TO_CUTOFF_LISTS[lattice_structure]]
+    cutoffs.pop(0)"""
 
     return sparse.stack([
         sparse.where(
             sparse.logical_and(distances > (1.0 - tolerance) * c, distances < (1.0 + tolerance) * c),
             x=True, y=False
-        ) for c in cutoffs[:max_adjacency_order]
+        ) for c in cutoffs
     ])
-
-
-def get_distance_matrix(
-        positions: np.typing.NDArray,
-        boxsize: Sequence[float],
-        max_distance: float
-) -> sparse.COO:
-
-    tree = KDTree(positions, boxsize=boxsize)
-    distances = tree.sparse_distance_matrix(tree, max_distance=max_distance).tocsr()
-    distances.eliminate_zeros()
-    return sparse.COO.from_scipy_sparse(distances)
 
 
 def get_three_body_tensors(
