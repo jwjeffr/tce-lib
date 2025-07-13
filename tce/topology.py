@@ -105,7 +105,25 @@ def get_feature_vector_difference(
     sites = np.unique(sites).tolist()
 
     truncated_adj = sparse.take(adjacency_tensors, sites, axis=1)
-    truncated_thr = sparse.take(three_body_tensors, sites, axis=1)
+
+    if three_body_tensors is None:
+        initial_three_body_terms, final_three_body_terms = [], []
+    else:
+        truncated_thr = sparse.take(three_body_tensors, sites, axis=1)
+        initial_three_body_terms = 3 * symmetrize(contract(
+            "nijk,iα,jβ,kγ->nαβγ",
+            truncated_thr,
+            initial_state_matrix[sites, :],
+            initial_state_matrix,
+            initial_state_matrix
+        ), axes=(1, 2, 3)).flatten()
+        final_three_body_terms = 3 * symmetrize(contract(
+            "nijk,iα,jβ,kγ->nαβγ",
+            truncated_thr,
+            final_state_matrix[sites, :],
+            final_state_matrix,
+            final_state_matrix
+        ), axes=(1, 2, 3)).flatten()
 
     initial_feature_vec_truncated = np.concatenate(
         [
@@ -115,13 +133,7 @@ def get_feature_vector_difference(
                 initial_state_matrix[sites, :],
                 initial_state_matrix
             ), axes=(1, 2)).flatten(),
-            3 * symmetrize(contract(
-                "nijk,iα,jβ,kγ->nαβγ",
-                truncated_thr,
-                initial_state_matrix[sites, :],
-                initial_state_matrix,
-                initial_state_matrix
-            ), axes=(1, 2, 3)).flatten()
+            initial_three_body_terms
         ]
     )
 
@@ -133,13 +145,7 @@ def get_feature_vector_difference(
                 final_state_matrix[sites, :],
                 final_state_matrix
             ), axes=(1, 2)).flatten(),
-            3 * symmetrize(contract(
-                "nijk,iα,jβ,kγ->nαβγ",
-                truncated_thr,
-                final_state_matrix[sites, :],
-                final_state_matrix,
-                final_state_matrix
-            ), axes=(1, 2, 3)).flatten()
+            final_three_body_terms
         ]
     )
 

@@ -109,9 +109,14 @@ class Supercell:
         contraction, only caring about "active" sites, or lattice sites that changed
         """
 
+        if max_triplet_order == 0:
+            three_body_tensors = None
+        else:
+            three_body_tensors = self.three_body_tensors(max_order=max_triplet_order)
+
         return topology.get_feature_vector_difference(
             adjacency_tensors=self.adjacency_tensors(max_order=max_adjacency_order),
-            three_body_tensors=self.three_body_tensors(max_order=max_triplet_order),
+            three_body_tensors=three_body_tensors,
             initial_state_matrix=initial_state_matrix,
             final_state_matrix=final_state_matrix
         )
