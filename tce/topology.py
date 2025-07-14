@@ -105,48 +105,45 @@ def get_feature_vector_difference(
     sites = np.unique(sites).tolist()
 
     truncated_adj = sparse.take(adjacency_tensors, sites, axis=1)
+    initial_feature_vec_truncated = 2 * symmetrize(contract(
+        "nij,iα,jβ->nαβ",
+        truncated_adj,
+        initial_state_matrix[sites, :],
+        initial_state_matrix
+    ), axes=(1, 2)).flatten()
+    final_feature_vec_truncated = 2 * symmetrize(contract(
+        "nij,iα,jβ->nαβ",
+        truncated_adj,
+        final_state_matrix[sites, :],
+        final_state_matrix
+    ), axes=(1, 2)).flatten()
 
-    if three_body_tensors is None:
-        initial_three_body_terms, final_three_body_terms = [], []
-    else:
-        truncated_thr = sparse.take(three_body_tensors, sites, axis=1)
-        initial_three_body_terms = 3 * symmetrize(contract(
-            "nijk,iα,jβ,kγ->nαβγ",
-            truncated_thr,
-            initial_state_matrix[sites, :],
-            initial_state_matrix,
-            initial_state_matrix
-        ), axes=(1, 2, 3)).flatten()
-        final_three_body_terms = 3 * symmetrize(contract(
-            "nijk,iα,jβ,kγ->nαβγ",
-            truncated_thr,
-            final_state_matrix[sites, :],
-            final_state_matrix,
-            final_state_matrix
-        ), axes=(1, 2, 3)).flatten()
+    if not three_body_tensors:
+        return final_feature_vec_truncated - initial_feature_vec_truncated
 
+    truncated_thr = sparse.take(three_body_tensors, sites, axis=1)
     initial_feature_vec_truncated = np.concatenate(
         [
-            2 * symmetrize(contract(
-                "nij,iα,jβ->nαβ",
-                truncated_adj,
+            initial_feature_vec_truncated,
+            3 * symmetrize(contract(
+                "nijk,iα,jβ,kγ->nαβγ",
+                truncated_thr,
                 initial_state_matrix[sites, :],
+                initial_state_matrix,
                 initial_state_matrix
-            ), axes=(1, 2)).flatten(),
-            initial_three_body_terms
+            ), axes=(1, 2, 3)).flatten()
         ]
     )
-
     final_feature_vec_truncated = np.concatenate(
         [
-            2 * symmetrize(contract(
-                "nij,iα,jβ->nαβ",
-                truncated_adj,
+            final_feature_vec_truncated,
+            3 * symmetrize(contract(
+                "nijk,iα,jβ,kγ->nαβγ",
+                truncated_thr,
                 final_state_matrix[sites, :],
+                final_state_matrix,
                 final_state_matrix
-            ), axes=(1, 2)).flatten(),
-            final_three_body_terms
+            ), axes=(1, 2, 3)).flatten()
         ]
     )
-
     return final_feature_vec_truncated - initial_feature_vec_truncated
