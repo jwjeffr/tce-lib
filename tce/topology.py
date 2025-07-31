@@ -118,7 +118,7 @@ def get_feature_vector_difference(
         final_state_matrix
     ), axes=(1, 2)).flatten()
 
-    if not three_body_tensors:
+    if three_body_tensors is None:
         return final_feature_vec_truncated - initial_feature_vec_truncated
 
     truncated_thr = sparse.take(three_body_tensors, sites, axis=1)
