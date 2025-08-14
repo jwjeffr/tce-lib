@@ -1,2 +1,2 @@
 # tce
-topological cluster expansion
+tensor cluster expansion
