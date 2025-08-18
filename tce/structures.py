@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
+from typing import Union
 
 import numpy as np
 from scipy.spatial import KDTree
@@ -22,7 +23,7 @@ class Supercell:
     size: tuple[int, int, int]
 
     @cached_property
-    def num_sites(self) -> int:
+    def num_sites(self) -> Union[int, np.integer]:
 
         """number of total lattice sites (NOT number of unit cells!)"""
 

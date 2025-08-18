@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/MUEXLY/tce"
+Homepage = "https://github.com/MUEXLY/tce-lib"
 
 [project.optional-dependencies]
 dev = [
@@ -36,6 +36,7 @@ dev = [
     "ruff~=0.9.4",
     "mypy~=1.13.0",
     "pdoc~=15.0.1",
+    "scipy-stubs~=1.61.1.0"
 ]
 
 [tool.hatch.version]
@@ -45,3 +46,7 @@ path = "tce/__init__.py"
 include = [
     "/tce",
 ]
+
+[[tool.mypy.overrides]]
+module = ["sparse", "opt_einsum"]
+ignore_missing_imports = true

@@ -17,11 +17,11 @@ def get_adjacency_tensors(
 
     distances = tree.sparse_distance_matrix(tree, max_distance=(1.0 + tolerance) * cutoffs[-1]).tocsr()
     distances.eliminate_zeros()
-    distances = sparse.COO.from_scipy_sparse(distances)
+    distances_sp = sparse.COO.from_scipy_sparse(distances)
 
     return sparse.stack([
         sparse.where(
-            sparse.logical_and(distances > (1.0 - tolerance) * c, distances < (1.0 + tolerance) * c),
+            sparse.logical_and(distances_sp > (1.0 - tolerance) * c, distances_sp < (1.0 + tolerance) * c),
             x=True, y=False
         ) for c in cutoffs
     ])
