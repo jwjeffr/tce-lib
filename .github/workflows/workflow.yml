@@ -131,9 +131,8 @@ jobs:
           name: github-pages
           path: _build/
       - name: Deploy to GitHub Pages
-        run: echo "placeholder"
-      #   id: deployment
-      #   uses: actions/deploy-pages@v4
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   pypi-publish:
     needs:
