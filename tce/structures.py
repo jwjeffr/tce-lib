@@ -13,9 +13,9 @@ from . import topology
 @dataclass(eq=True, frozen=True)
 class Supercell:
 
-    """
-    class representing a simulation supercell. eq=True and frozen=True ensures we can hash a Supercell instance, which
-    we need to cache the topology tensors later
+    r"""
+    class representing a simulation supercell. `eq=True` and `frozen=True` ensures we can hash a `Supercell` instance,
+    which we need to cache the topology tensors later
     """
 
     lattice_structure: LatticeStructure
@@ -25,14 +25,14 @@ class Supercell:
     @cached_property
     def num_sites(self) -> Union[int, np.integer]:
 
-        """number of total lattice sites (NOT number of unit cells!)"""
+        r"""number of total lattice sites (NOT number of unit cells!)"""
 
         return np.prod(self.size) * STRUCTURE_TO_ATOMIC_BASIS[self.lattice_structure].shape[0]
 
     @cached_property
     def positions(self) -> np.typing.NDArray[np.floating]:
 
-        """
+        r"""
         positions of lattice sites
         create a meshgrid of unit cell positions, and add lattice sites at atomic basis positions in each unit cell
         """
@@ -47,7 +47,7 @@ class Supercell:
     @lru_cache
     def adjacency_tensors(self, max_order: int, tolerance: float = 1.0e-6) -> sparse.COO:
 
-        """
+        r"""
         two-body adjacency tensors $A_{ij}^{(n)}$. computed by binning interatomic distances
         """
 
@@ -60,13 +60,13 @@ class Supercell:
     @lru_cache
     def three_body_tensors(self, max_order: int) -> sparse.COO:
 
-        """
+        r"""
         three-body tensors, computed by summing the two-body tensors
 
-        each three-body tensor is defined by a set of labels. e.g., in an fcc solid, the first-order triplet is formed
-        by three first-nearest neighbor pairs, so its label is (0, 0, 0). similarly, the second-order triplet in fcc is
-        formed by two first-nearest neighbor pairs, and one second-nearest neighbor pair, so its label is (0, 0, 1). we
-        sum over the different permutations (which triple-counts triplets, which is fine), and then stack them over
+        a set of labels defines each three-body tensor. e.g., in an fcc solid, the first-order triplet is formed
+        by three first-nearest neighbor pairs, so its label is $(0, 0, 0)$. similarly, the second-order triplet in fcc is
+        formed by two first-nearest neighbor pairs, and one second-nearest neighbor pair, so its label is $(0, 0, 1)$. we
+        sum over the different permutations (which triple-counts triplets), and then stack them over
         the labels
         """
 
@@ -87,8 +87,8 @@ class Supercell:
         max_triplet_order: int
     ) -> np.typing.NDArray[np.integer]:
 
-        """
-        feature vector extracting topological features. fancy name for number of bonds, and number of triplets
+        r"""
+        feature vector $\mathbf{t}$ extracting topological features, i.e. number of bonds, and number of triplets
         """
 
         return topology.get_feature_vector(
@@ -105,9 +105,9 @@ class Supercell:
         max_triplet_order: int,
     ) -> np.typing.NDArray[np.floating]:
 
-        """
-        clever shortcut for computing feature vector difference between two nearby states. tldr, perform a truncated
-        contraction, only caring about "active" sites, or lattice sites that changed
+        r"""
+        clever shortcut for computing feature vector difference $\Delta\mathbf{t}$ between two nearby states. here, we
+        perform a truncated contraction, only caring about "active" sites, or lattice sites that changed
         """
 
         if max_triplet_order == 0:

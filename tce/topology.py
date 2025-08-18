@@ -9,11 +9,38 @@ from opt_einsum import contract
 from .constants import LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS
 
 
+def symmetrize(tensor: sparse.COO, axes=None) -> sparse.COO:
+    r"""
+    symmetrize a tensor $T$:
+
+    $$T_{(i_1 i_2 \cdots i_r)} = \frac{1}{r!}\sum_{\sigma\in S_n} T_{\sigma(i_1) \sigma(i_2) \cdots \sigma(i_r)}$$
+
+    where $S_n$ is the symmetric group on $n$ elements, so we are summing over the permutations of the indices.
+
+    e.g. $T_{(12)} = \frac{T_{12} + T_{21}}{2}$, or equivalently $\text{symmetrize}(T) = \frac{T + T^\intercal}{2}$
+
+    specify the `axes` argument if you only want to symmetrize over a subset of indices
+    """
+
+    if not axes:
+        axes = tuple(range(tensor.ndim))
+
+    perms = list(permutations(axes))
+
+    return sum(sparse.moveaxis(tensor, axes, perm) for perm in perms) / len(perms)
+
+
 def get_adjacency_tensors(
         tree: KDTree,
         cutoffs: Sequence[float],
         tolerance: float = 0.01
 ) -> sparse.COO:
+
+    r"""
+    compute adjacency tensors $\mathbf{A}_{ij}^{(n)}$. we first compute the sparse distance matrix using the
+    `scipy.spatial.KDTree` data structure, and then convert to a `sparse.COO` tensor. then, we stack according to
+    neighbor order, i.e. $A_{ij}^{(n)} = 1$ if sites $i$ and $j$ are $n$'th order neighbors, and $0$ else.
+    """
 
     distances = tree.sparse_distance_matrix(tree, max_distance=(1.0 + tolerance) * cutoffs[-1]).tocsr()
     distances.eliminate_zeros()
@@ -32,6 +59,16 @@ def get_three_body_tensors(
         adjacency_tensors: sparse.COO,
         max_three_body_order: int,
 ) -> sparse.COO:
+
+    r"""
+    compute three-body tensors $B_{ijk}^{(n)}$:
+
+    $$ B_{ijk}^{(n)} = \bigvee_{\sigma\in S_3}
+        A_{ij}^{(\sigma(\mathfrak{a}))}A_{jk}^{(\sigma(\mathfrak{b}))}A_{ki}^{(\sigma(\mathfrak{c}))} $$
+
+    where the mapping between $n$ and $(\mathfrak{a}, \mathfrak{b}, \mathfrak{c})$ is defined by
+    `constants.STRUCTURE_TO_THREE_BODY_LABELS`.
+    """
 
     three_body_labels = [
         STRUCTURE_TO_THREE_BODY_LABELS[lattice_structure][order] for order in range(max_three_body_order)
@@ -57,6 +94,11 @@ def get_feature_vector(
         state_matrix: np.typing.NDArray
 ) -> np.typing.NDArray:
 
+    r"""
+    topological feature vector $\mathbf{t}$ with components $N_{\alpha\beta}^{(n)} = A_{ij}^{(n)}X_{i\alpha}X_{j\beta}$
+    and $M_{\alpha\beta\gamma}^{(n)} = B_{ijk}^{(n)} X_{i\alpha}X_{j\beta}X_{k\gamma}$.
+    """
+
     return np.concatenate([
         contract(
             "nij,iα,jβ->nαβ",
@@ -74,32 +116,16 @@ def get_feature_vector(
     ])
 
 
-def symmetrize(tensor: sparse.COO, axes=None) -> sparse.COO:
-
-    r"""
-    symmetrize a tensor $T$:
-
-    $$T_{(i_1 i_2 \cdots i_n)} = \frac{1}{n!}\sum_{\sigma\in S_n} T_{\sigma(i_1) \sigma(i_2) \cdots \sigma(i_n)}$$
-
-    where $S_n$ is the symmetric group on $n$ elements, so we are summing over the permutations of the indices.
-
-    e.g. $T_{(12)} = \frac{T_{12} + T_{21}}{2}$, or equivalently $\text{symmetrize}(T) = \frac{T + T^\intercal}{2}$
-    """
-
-    if not axes:
-        axes = tuple(range(tensor.ndim))
-
-    perms = list(permutations(axes))
-
-    return sum(sparse.moveaxis(tensor, axes, perm) for perm in perms) / len(perms)
-
-
 def get_feature_vector_difference(
         adjacency_tensors: sparse.COO,
         three_body_tensors: sparse.COO,
         initial_state_matrix: np.typing.NDArray,
         final_state_matrix: np.typing.NDArray
 ) -> np.typing.NDArray:
+
+    r"""
+    shortcut method for computing feature vector difference $\mathbf{t}$ between two nearby states
+    """
 
     sites, _ = np.where(initial_state_matrix != final_state_matrix)
     sites = np.unique(sites).tolist()

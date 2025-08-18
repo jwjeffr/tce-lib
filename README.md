@@ -18,7 +18,7 @@ Authors acknowledge support from the U.S. Department of Energy, Office of Basic 
 
 ## 🐝 Found a bug?
 
-Please open an issue [here](https://github.com/MUEXLY/tce/issues), with a description of the issue and a [minimal reproducing example](https://stackoverflow.com/help/minimal-reproducible-example).
+Please open an issue [here](https://github.com/MUEXLY/tce/issues), with a description of the issue and a [minimal, reproducible example](https://stackoverflow.com/help/minimal-reproducible-example) of the issue.
 
 ## 📑 License
 
