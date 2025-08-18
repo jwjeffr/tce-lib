@@ -7,7 +7,10 @@ r"""
 
 Below is a placeholder example
 
+```py
 .. include:: ../examples/simple.py
+```
+
 """
 
 __version__ = "0.0.1"
