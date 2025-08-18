@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from typing import Dict
-from functools import cache
 from itertools import product, permutations
 
 import numpy as np
