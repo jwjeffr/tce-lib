@@ -8,13 +8,12 @@ dynamic = ["version"]
 description = "tensor cluster expansion"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 author = { name = "Jacob Jeffries", email = "jwjeffr@clemson.edu" }
 keywords = [
     "alloys"
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
