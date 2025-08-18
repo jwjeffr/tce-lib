@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tce"
 dynamic = ["version"]
-description = "topological cluster expansion"
+description = "tensor cluster expansion"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/jwjeffr/aqua-blue"
+Homepage = "https://github.com/MUEXLY/tce"
 
 [project.optional-dependencies]
 dev = [
