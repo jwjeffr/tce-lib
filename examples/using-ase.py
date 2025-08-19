@@ -35,8 +35,8 @@ def main():
         tree=tree,
         cutoffs=lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[structure][:2]
     )
-    # compute the number of n'th-nearest neighbors as a sanity check. should be 8 first-nearest neighbors and 6
-    # second-nearest neighbors
+    # compute the number of n'th-nearest neighbors as a sanity check.
+    # should be 8 first-nearest neighbors and 6 second-nearest neighbors
     for adj in adjacency_tensors:
         print(adj.sum(axis=0).mean())
     three_body_tensors = get_three_body_tensors(
