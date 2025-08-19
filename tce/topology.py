@@ -6,7 +6,7 @@ import numpy as np
 import sparse
 from opt_einsum import contract
 
-from .constants import LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS
+from .constants import LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS, load_three_body_labels
 
 
 def symmetrize(tensor: sparse.COO, axes=None) -> sparse.COO:
@@ -70,8 +70,13 @@ def get_three_body_tensors(
     `constants.STRUCTURE_TO_THREE_BODY_LABELS`.
     """
 
+    try:
+        labels = STRUCTURE_TO_THREE_BODY_LABELS[lattice_structure]
+    except KeyError:
+        labels = load_three_body_labels()[lattice_structure]
+
     three_body_labels = [
-        STRUCTURE_TO_THREE_BODY_LABELS[lattice_structure][order] for order in range(max_three_body_order)
+        labels[order] for order in range(max_three_body_order)
     ]
 
     three_body_tensors = sparse.stack([

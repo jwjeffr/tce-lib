@@ -6,7 +6,7 @@ import numpy as np
 from scipy.spatial import KDTree
 import sparse
 
-from .constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS
+from .constants import LatticeStructure, STRUCTURE_TO_ATOMIC_BASIS, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_THREE_BODY_LABELS, load_three_body_labels
 from . import topology
 
 
@@ -69,10 +69,11 @@ class Supercell:
         sum over the different permutations (which triple-counts triplets), and then stack them over
         the labels
         """
-
-        three_body_labels = [
-            STRUCTURE_TO_THREE_BODY_LABELS[self.lattice_structure][order] for order in range(max_order)
-        ]
+        try:
+            labels = STRUCTURE_TO_THREE_BODY_LABELS[self.lattice_structure]
+        except KeyError:
+            labels = load_three_body_labels()[self.lattice_structure]
+        three_body_labels = [labels[order] for order in range(max_order)]
 
         return topology.get_three_body_tensors(
             lattice_structure=self.lattice_structure,

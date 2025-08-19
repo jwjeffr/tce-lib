@@ -38,7 +38,8 @@ dev = [
     "scipy-stubs~=1.15.3.0"
 ]
 examples = [
-    "ase~=3.26.0"
+    "ase~=3.26.0",
+    "aenum~=3.1.16"
 ]
 
 [tool.hatch.version]
