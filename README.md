@@ -8,6 +8,21 @@ Library for building a tensor cluster expansion
 
 Placeholder text
 
+## 📩 Installation
+
+`tce-lib` is installable via the Python Package Index:
+
+```shell
+pip install tce-lib
+```
+
+or, from source:
+
+```shell
+git clone https://github.com/MUEXLY/tce-lib
+pip install -e tce-lib/
+```
+
 ## 📌 Citation
 
 Please cite our work [here](https://google.com/) if you use `tce-lib` in your work.
