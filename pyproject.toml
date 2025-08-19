@@ -45,9 +45,10 @@ examples = [
 path = "tce/__init__.py"
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/tce",
-]
+include = ["/tce"]
+
+[tool.hatch.build.targets.wheel]
+include = ["tce"]
 
 [[tool.mypy.overrides]]
 module = ["sparse", "opt_einsum"]
