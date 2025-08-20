@@ -103,7 +103,7 @@ jobs:
           pip install -e .[dev]
       - name: Build pdoc documentation
         run: >-
-          pdoc -d google tce/ -o _build --math --favicon "https://raw.githubusercontent.com/twitter/twemoji/refs/heads/master/assets/72x72/2699.png" --logo "https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/assets/logo.png"
+          pdoc -d google tce/ -o _build --math --favicon "https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/assets/favicon.png" --logo "https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/assets/logo.png"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

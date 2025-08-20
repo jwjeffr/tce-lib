@@ -23,9 +23,13 @@ tetragonal unit cell.
 ```py
 .. include:: ../examples/exotic-lattice.py
 ```
+
+We are also more than happy to include new lattice types as native options in `tce-lib`! Please either open an issue
+[here](https://github.com/MUEXLY/tce-lib/issues), or a pull request [here](https://github.com/MUEXLY/tce-lib/pulls) if
+you are familiar with GitHub.
 """
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
