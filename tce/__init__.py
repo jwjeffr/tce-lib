@@ -55,10 +55,9 @@ This example serves as a good template for using programs other than LAMMPS to c
 define a constructor that creates a `Calculator` instance that wraps VASP:
 
 ```py
-
 from ase.calculators.vasp import Vasp
 
-calculator_constructor: Callable[[], Calculator] = lambda: Vasp(
+calculator_constructor = lambda: Vasp(
     prec="Accurate",
     encut=500,
     istart=0,
@@ -77,6 +76,7 @@ calculator_constructor: Callable[[], Calculator] = lambda: Vasp(
     lwave=False,
     lcharg=False
 )
+```
 
 See ASE's documentation [here](https://ase-lib.org/ase/calculators/vasp.html) for how to properly set this up!
 """

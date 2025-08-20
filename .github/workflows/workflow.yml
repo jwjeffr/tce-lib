@@ -56,8 +56,9 @@ jobs:
         run: >-
           pip install .[examples]
       - name: Run example scripts
+        # need to skip the lammps example, github actions won't have lammps
         run: >-
-          for file in examples/*.py; do python "$file"; done
+          for file in examples/*.py; do case "$file" in *iron-chrome-lammps) ;; *) python "$file";; esac; done
 
   build:
     needs:
