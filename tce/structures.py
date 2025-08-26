@@ -25,7 +25,9 @@ class Supercell:
     @cached_property
     def num_sites(self) -> Union[int, np.integer]:
 
-        r"""number of total lattice sites (NOT number of unit cells!)"""
+        r"""
+        number of total lattice sites (NOT number of unit cells!)
+        """
 
         return np.prod(self.size) * STRUCTURE_TO_ATOMIC_BASIS[self.lattice_structure].shape[0]
 
@@ -49,6 +51,14 @@ class Supercell:
 
         r"""
         two-body adjacency tensors $A_{ij}^{(n)}$. computed by binning interatomic distances
+
+        Args:
+            max_order (int):
+                maximum nearest neighbor order
+            tolerance (float):
+                The tolerance $\varepsilon$ to include when binning interatomic distances. For example, when searching
+                for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. This
+                should be a small number. Defaults to $0.01$.
         """
 
         return topology.get_adjacency_tensors(
@@ -68,6 +78,9 @@ class Supercell:
         formed by two first-nearest neighbor pairs, and one second-nearest neighbor pair, so its label is $(0, 0, 1)$. we
         sum over the different permutations (which triple-counts triplets), and then stack them over
         the labels
+
+        Args:
+            max_order (int): Maximum three body order
         """
         try:
             labels = STRUCTURE_TO_THREE_BODY_LABELS[self.lattice_structure]
@@ -90,6 +103,15 @@ class Supercell:
 
         r"""
         feature vector $\mathbf{t}$ extracting topological features, i.e. number of bonds, and number of triplets
+
+        Args:
+            state_matrix (sparse.COO):
+                The state tensor $\mathbf{X}$, defined by $X_{i\alpha} = [\text{site $i$ occupied by type $\alpha$}]$,
+                where $[\cdot]$ is the [Iverson bracket](https://en.wikipedia.org/wiki/Iverson_bracket).
+            max_adjacency_order (int):
+                The maximum nearest neighbor order
+            max_triplet_order (int):
+                The maximum three body order
         """
 
         return topology.get_feature_vector(
@@ -107,8 +129,19 @@ class Supercell:
     ) -> np.typing.NDArray[np.floating]:
 
         r"""
-        clever shortcut for computing feature vector difference $\Delta\mathbf{t}$ between two nearby states. here, we
+        clever shortcut for computing feature vector difference
+        $\Delta\mathbf{t} = \mathbf{t}(\mathbf{X}') - \mathbf{t}(\mathbf{X})$ between two nearby states. here, we
         perform a truncated contraction, only caring about "active" sites, or lattice sites that changed
+
+        Args:
+            initial_state_matrix (sparse.COO):
+                The initial state tensor $\mathbf{X}$.
+            final_state_matrix (sparse.COO):
+                The final state tensor $\mathbf{X}'$.
+            max_adjacency_order (int):
+                The maximum nearest neighbor order
+            max_triplet_order (int):
+                The maximum three body order
         """
 
         if max_triplet_order == 0:

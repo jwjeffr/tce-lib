@@ -52,6 +52,11 @@ def main():
     )
     print(feature_vector)
 
+    # can also check adjacency tensors for number of n'th nearest neighbors
+    expected_num_neighbors = (4, 12, 12)
+    for adj, n in zip(supercell.adjacency_tensors(max_order=3), expected_num_neighbors):
+        assert adj.sum(axis=0).mean() == n
+
 
 if __name__ == "__main__":
 

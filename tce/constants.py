@@ -80,6 +80,16 @@ def load_three_body_labels(
     for all lattice structures up to fourth-nearest neighbors, and store them in a mapping allowing for
     $\mathcal{O}(1)$ access. This function is called at import, with the result stored in the module-level constant
     `STRUCTURE_TO_THREE_BODY_LABELS`.
+
+    Args:
+        tolerance (float):
+            The tolerance $\varepsilon$ to include when binning interatomic distances. For example, when searching
+            for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. This
+            should be a small number. Defaults to $0.01$.
+        min_num_sites (int):
+            The minimum number of atoms within a supercell when finding three body labels. The supercell should be
+            large enough that neighbor distances do not span multiple supercells, but small enough for an efficient
+            calculation. Defaults to $125$.
     """
 
     label_dict = {}

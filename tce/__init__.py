@@ -81,7 +81,7 @@ calculator_constructor = lambda: Vasp(
 See ASE's documentation [here](https://ase-lib.org/ase/calculators/vasp.html) for how to properly set this up!
 """
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
