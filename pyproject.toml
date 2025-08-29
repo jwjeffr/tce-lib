@@ -22,7 +22,8 @@ dependencies = [
     "numpy~=2.0.2",
     "sparse~=0.16.0",
     "scipy~=1.13.1",
-    "opt-einsum~=3.4.0"
+    "opt-einsum~=3.4.0",
+    "ase~=3.26.0"
 ]
 
 [project.urls]
@@ -38,9 +39,9 @@ dev = [
     "scipy-stubs~=1.15.3.0"
 ]
 examples = [
-    "ase~=3.26.0",
     "aenum~=3.1.16",
-    "scikit-learn~=1.7.1"
+    "scikit-learn~=1.7.1",
+    "requests~=2.32.5"
 ]
 
 [tool.hatch.version]

@@ -1,5 +1,5 @@
 from itertools import permutations
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Union
 
 from scipy.spatial import KDTree
 import numpy as np
@@ -38,7 +38,7 @@ def symmetrize(tensor: sparse.COO, axes: Optional[tuple[int, ...]] =None) -> spa
 
 def get_adjacency_tensors(
         tree: KDTree,
-        cutoffs: Sequence[float],
+        cutoffs: Union[list[float], np.typing.NDArray[np.floating]],
         tolerance: float = 0.01
 ) -> sparse.COO:
 
@@ -51,7 +51,7 @@ def get_adjacency_tensors(
         tree (scipy.spatial.KDTree):
             The KDTree to compute adjacency tensors from. This structure stores lattice positions as well as lattice
             vectors to encode periodic boundary conditions.
-        cutoffs (Sequence[float]):
+        cutoffs (Union[list[float], np.typing.NDArray[np.floating]]):
             Distance cutoffs for interatomic distances.
         tolerance (float):
             The tolerance $\varepsilon$ to include when binning interatomic distances. For example, when searching

@@ -174,3 +174,15 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 trash
+
+# configuration files
+*.xyz
+
+# potentially unsafe numpy archive files
+*.npz
+
+# potential files
+*.eam.alloy
+
+# file for creating logo and favicon
+assets/favicon.py

@@ -79,9 +79,42 @@ calculator_constructor = lambda: Vasp(
 ```
 
 See ASE's documentation [here](https://ase-lib.org/ase/calculators/vasp.html) for how to properly set this up!
+
+## 🏋️‍♀️ Training + Monte Carlo
+
+Below is a slightly more involved example of creating a model and deploying it for a Monte Carlo run.
+
+This showcases two utility modules, namely `tce.training` and `tce.monte_carlo`. These mostly contain wrappers, so
+feel free to avoid them! If you are using this for a novel research idea, it is likely that these wrappers are too
+basic (which is a good thing for you!).
+
+The first script is training a CuNi model using an EAM potential from Fischer et al.
+(paper [here](https://doi.org/10.1016/j.actamat.2019.06.027)). In this script, we generate a bunch of random CuNi
+solid solutions, attach an `ase.calculators.eam.EAM` calculator to each configuration, compute their energies, and
+then train using the `tce.training.TrainingContainer` object, which is just a container of information about the
+trained model. Note that the method `tce.training.TrainingContainer.from_ase_atoms` is doing the training in the
+background. The container is then saved to be used for later.
+
+**IMPORTANT**: These are unrelaxed energies! A real production environment should optimize the structure - see the
+prior example on how to do this within a LAMMPS calculator.
+
+```py
+.. include:: ../examples/0-copper-nickel-training.py
+```
+
+The next script uses the saved container to run a canonical Monte Carlo simulation on a $10\times 10\times 10$
+supercell, storing the configuration (saved in an `ase.Atoms` object) every 100 frames. We also set up a `logging`
+configuration here, which will tell you how far-along the simulation is. Note that `trajectory` looks complicated, but
+is just a list of `ase.Atoms` objects, so you have a lot of freedom to do what you wish with this trajectory later.
+
+```py
+.. include:: ../examples/1-copper-nickel-mc.py
+```
+
+These are then visualizable with a number of softwares, including [OVITO](https://www.ovito.org/).
 """
 
-__version__ = "0.0.5"
+__version__ = "0.1.0"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
