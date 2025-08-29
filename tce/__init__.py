@@ -117,7 +117,7 @@ are from any other atomistic simulation software. Below we'll compute the Cowley
 `cowley-sro-parameters` plugin [here](https://pypi.org/p/cowley-sro-parameters) (shameless plug... I'm the author 🙂).
 
 ```py
-.. include:: ../examples/2-copper-nickel-mc.py
+.. include:: ../examples/2-copper-nickel-sro.py
 ```
 
 This generates the plot below. A negative value indicates attraction between two atom types. So, although the solution
@@ -131,7 +131,7 @@ should be random, it is clearly not fully random!
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png)
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
