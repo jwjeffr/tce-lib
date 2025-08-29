@@ -54,7 +54,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Set up examples environment
         run: >-
-          pip install .[examples]; apt-get update && apt-get install libgl1
+          pip install .[examples]; sudo apt-get update && sudo apt-get install libgl1
       - name: Run example scripts
         # need to skip the lammps example, github actions won't have lammps
         run: >-
