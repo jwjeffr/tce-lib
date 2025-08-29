@@ -1,5 +1,5 @@
 from itertools import permutations
-from typing import Sequence, Optional, Union
+from typing import Optional, Union
 
 from scipy.spatial import KDTree
 import numpy as np

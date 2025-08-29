@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from typing import Optional
 from abc import ABC, abstractmethod
 from dataclasses import dataclass

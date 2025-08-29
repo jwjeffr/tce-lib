@@ -21,17 +21,18 @@ def main():
 
     # we need to define a constructor here, not a Calculator object, because each configuration needs its own
     # Calculator instance
-    calculator_constructor: Callable[[], Calculator] = lambda: LAMMPSlib(
-        lmpcmds=[
-            "pair_style eam/alloy",
-            "pair_coeff * * FeCr.eam.alloy Fe Cr",
-            "neighbor 2.0 bin",
-            "neigh_modify delay 10",
-            "fix 1 all box/relax iso 0.0 vmax 0.001",
-            "min_style cg",
-            "minimize 0.0 1.0e-9 100000 10000000"
-        ]
-    )
+    def calculator_constructor() -> Callable[[], Calculator]:
+        return LAMMPSlib(
+            lmpcmds=[
+                "pair_style eam/alloy",
+                "pair_coeff * * FeCr.eam.alloy Fe Cr",
+                "neighbor 2.0 bin",
+                "neigh_modify delay 10",
+                "fix 1 all box/relax iso 0.0 vmax 0.001",
+                "min_style cg",
+                "minimize 0.0 1.0e-9 100000 10000000"
+            ]
+        )
     num_samples: int = 50
     rng: np.random.Generator = np.random.default_rng(seed=0)
 
