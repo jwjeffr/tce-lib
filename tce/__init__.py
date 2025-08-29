@@ -120,8 +120,9 @@ are from any other atomistic simulation software. Below we'll compute the Cowley
 .. include:: ../examples/2-copper-nickel-sro.py
 ```
 
-This generates the plot below. A negative value indicates attraction between two atom types. So, although the solution
-should be random, it is clearly not fully random!
+This generates the plot below. A negative value indicates attraction between two atom types. So, the solution is
+clearly not fully random! We probably need a lot more than 10,000 steps too - this curve should bottom out once we
+reach steady state.
 
 [<img
     src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png"
@@ -131,7 +132,7 @@ should be random, it is clearly not fully random!
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png)
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
