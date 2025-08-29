@@ -41,7 +41,9 @@ dev = [
 examples = [
     "aenum~=3.1.16",
     "scikit-learn~=1.7.1",
-    "requests~=2.32.5"
+    "requests~=2.32.5",
+    "ovito~=3.13.1",
+    "cowley-sro-parameters~=1.1.1"
 ]
 
 [tool.hatch.version]

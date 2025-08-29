@@ -111,10 +111,27 @@ is just a list of `ase.Atoms` objects, so you have a lot of freedom to do what y
 .. include:: ../examples/1-copper-nickel-mc.py
 ```
 
-These are then visualizable with a number of softwares, including [OVITO](https://www.ovito.org/).
+These are then visualizable with a number of softwares, including [OVITO](https://www.ovito.org/). We can now also use
+OVITO's Python library [here](https://pypi.org/p/ovito) and any of its plugins to do some analysis, as if our files
+are from any other atomistic simulation software. Below we'll compute the Cowley short range order parameter using the
+`cowley-sro-parameters` plugin [here](https://pypi.org/p/cowley-sro-parameters) (shameless plug... I'm the author 🙂).
+
+```py
+.. include:: ../examples/2-copper-nickel-mc.py
+```
+
+This generates the plot below. A negative value indicates attraction between two atom types. So, although the solution
+should be random, it is clearly not fully random!
+
+[<img
+    src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png"
+    width=100%
+    alt="CuNi SRO parameter from CE"
+    title="SRO parameter"
+/>](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
