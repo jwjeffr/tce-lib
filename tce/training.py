@@ -67,6 +67,51 @@ class CEModel:
         )
 
 
+def get_data_pairs(
+    configurations: list[Atoms],
+    basis: ClusterBasis
+) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+
+    # not all configurations need to have the same number of types, calculate the union of types
+    all_types = set.union(*(set(x.get_chemical_symbols()) for x in configurations))
+    type_map = np.array(sorted(list(all_types)))
+
+    num_types = len(type_map)
+    inverse_type_map = {symbol: i for i, symbol in enumerate(type_map)}
+
+    feature_size = basis.max_adjacency_order * num_types ** 2 + basis.max_triplet_order * num_types ** 3
+    X = np.zeros((len(configurations), feature_size))
+    y = np.zeros(len(configurations))
+
+    for index, atoms in enumerate(configurations):
+        tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
+        adjacency_tensors = get_adjacency_tensors(
+            tree=tree,
+            cutoffs=basis.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[basis.lattice_structure][
+                                              :basis.max_adjacency_order],
+        )
+        three_body_tensors = get_three_body_tensors(
+            lattice_structure=basis.lattice_structure,
+            adjacency_tensors=adjacency_tensors,
+            max_three_body_order=basis.max_triplet_order,
+        )
+
+        state_matrix = np.zeros((len(atoms), num_types))
+        for site, symbol in enumerate(atoms.symbols):
+            state_matrix[site, inverse_type_map[symbol]] = 1.0
+
+        # compute the feature vector and store it
+        X[index, :] = get_feature_vector(
+            adjacency_tensors=adjacency_tensors,
+            three_body_tensors=three_body_tensors,
+            state_matrix=state_matrix
+        )
+
+        y[index] = atoms.get_potential_energy()
+
+    return X, y
+
+
 @dataclass
 class TrainingMethod(ABC):
 
@@ -119,36 +164,6 @@ class LimitingRidge(TrainingMethod):
         all_types = set.union(*(set(x.get_chemical_symbols()) for x in configurations))
         type_map = np.array(sorted(list(all_types)))
 
-        num_types = len(type_map)
-        inverse_type_map = {symbol: i for i, symbol in enumerate(type_map)}
-
-        feature_size = basis.max_adjacency_order * num_types ** 2 + basis.max_triplet_order * num_types ** 3
-        X = np.zeros((len(configurations), feature_size))
-        y = np.zeros(len(configurations))
-
-        for index, atoms in enumerate(configurations):
-            tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
-            adjacency_tensors = get_adjacency_tensors(
-                tree=tree,
-                cutoffs=basis.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[basis.lattice_structure][:basis.max_adjacency_order],
-            )
-            three_body_tensors = get_three_body_tensors(
-                lattice_structure=basis.lattice_structure,
-                adjacency_tensors=adjacency_tensors,
-                max_three_body_order=basis.max_triplet_order,
-            )
-
-            state_matrix = np.zeros((len(atoms), num_types))
-            for site, symbol in enumerate(atoms.symbols):
-                state_matrix[site, inverse_type_map[symbol]] = 1.0
-
-            # compute the feature vector and store it
-            X[index, :] = get_feature_vector(
-                adjacency_tensors=adjacency_tensors,
-                three_body_tensors=three_body_tensors,
-                state_matrix=state_matrix
-            )
-
-            y[index] = atoms.get_potential_energy()
+        X, y = get_data_pairs(configurations, basis)
 
         return CEModel(cluster_basis=basis, interaction_vector=np.linalg.pinv(X) @ y, type_map=type_map)

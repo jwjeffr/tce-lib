@@ -14,7 +14,6 @@ def main():
     lattice_parameter = 3.56
     lattice_structure = LatticeStructure.BCC
     species = np.array(["Cu", "Ni"])
-    size = (3, 3, 3)
     generator = np.random.default_rng(seed=0)
 
     atoms = build.bulk(
@@ -22,7 +21,7 @@ def main():
         crystalstructure=lattice_structure.name.lower(),
         a=lattice_parameter,
         cubic=True
-    ).repeat(size)
+    ).repeat((3, 3, 3))
 
     num_configurations = 50
     configurations = []

@@ -121,7 +121,8 @@ are from any other atomistic simulation software. Below we'll compute the Cowley
 
 This generates the plot below. A negative value indicates attraction between two atom types. So, the solution is
 clearly not fully random! We probably need a lot more than 10,000 steps too - this curve should bottom out once we
-reach steady state.
+reach steady state. Note we can also just grab the potential energy from the `ase.Atoms` instances - the Monte Carlo
+run stores this information using `ase.calculators.singlepoint.SinglePointCalculator` instances.
 
 [<img
     src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png"
@@ -129,9 +130,37 @@ reach steady state.
     alt="CuNi SRO parameter from CE"
     title="SRO parameter"
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png)
+
+## 💻 Custom Training (Advanced)
+
+Below is an example of using a custom training method to train the CE model. There are many reasons one might want to do
+this. The example below is a very typical one - using [lasso](https://en.wikipedia.org/wiki/Lasso_(statistics)). This
+regularization technique minimizes the loss:
+
+$$ L(\beta\; |\;\lambda) = \|X\beta - y\|_2^2 + \lambda \|\beta\|_1^2 $$
+
+which better-supports sparse best-fit parameters $\hat{\beta}$, which may be useful if you only want to exclude
+non-important clusters. We'll use `scikit-learn`'s interface for providing a model. You can really use any linear
+model here (without an intercept...), see `scikit-learn`'s docs
+[here](https://scikit-learn.org/stable/modules/linear_model.html) for more examples of these.
+
+```py
+.. include:: ../examples/3-sklearn-fitting.py
+```
+
+This script (it will be quite slow...) will calculate the number of nonzero cluster interaction coefficients as a
+function of the regularization parameter. For larger regularization parameters, the number of nonzero coefficients
+should decrease.
+
+[<img
+    src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/regularization.png"
+    width=100%
+    alt="Lasso regularization"
+    title="Lasso"
+/>](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/regularization.png)
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
@@ -147,7 +176,7 @@ if __version__.startswith("0."):
     warnings.simplefilter("once", UserWarning)
 
     warnings.warn(
-        f"{__name__} is in alpha. APIs are unstable and may change without notice."
+        f"{__name__} is in alpha. APIs are unstable and may change without notice. "
         f"Please report any problems at {__url__}/issues",
         UserWarning,
         stacklevel=2,

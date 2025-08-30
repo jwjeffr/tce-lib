@@ -5,6 +5,7 @@ import logging
 
 import numpy as np
 from ase import Atoms, build
+from ase.calculators.singlepoint import SinglePointCalculator
 
 from tce.structures import Supercell
 from tce.training import CEModel
@@ -110,8 +111,10 @@ def monte_carlo(
 
     """
 
-    assert supercell.lattice_structure == model.cluster_basis.lattice_structure
-    assert supercell.lattice_parameter == model.cluster_basis.lattice_parameter
+    if supercell.lattice_parameter != model.cluster_basis.lattice_parameter:
+        raise ValueError(f"{supercell.lattice_parameter=} and {model.cluster_basis.lattice_parameter=} need to match!")
+    if supercell.lattice_structure != model.cluster_basis.lattice_structure:
+        raise ValueError(f"{supercell.lattice_structure=} and {model.cluster_basis.lattice_structure=} need to match!")
 
     if not generator:
         generator = np.random.default_rng(seed=0)
@@ -133,6 +136,11 @@ def monte_carlo(
     state_matrix[np.arange(supercell.num_sites), initial_types] = 1
 
     trajectory = []
+    energy = model.interaction_vector @ supercell.feature_vector(
+        state_matrix=state_matrix,
+        max_adjacency_order=model.cluster_basis.max_adjacency_order,
+        max_triplet_order=model.cluster_basis.max_triplet_order
+    )
     for step in range(num_steps):
 
         LOGGER.info(f"MC step {step:.0f}/{num_steps:.0f}")
@@ -141,6 +149,7 @@ def monte_carlo(
             _, types = np.where(state_matrix)
             atoms = ase_supercell.copy()
             atoms.set_chemical_symbols(symbols=model.type_map[types])
+            atoms.calc = SinglePointCalculator(atoms=atoms, energy=energy)
             trajectory.append(atoms)
             LOGGER.info(f"saved configuration at step {step:.0f}/{num_steps:.0f}")
 
@@ -154,5 +163,6 @@ def monte_carlo(
         if np.exp(-beta * energy_diff) > 1.0 - generator.random():
             LOGGER.info(f"move accepted with energy difference {energy_diff:.3f}")
             state_matrix = new_state_matrix
+            energy += energy_diff
 
     return trajectory
