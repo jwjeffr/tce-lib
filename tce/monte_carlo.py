@@ -7,7 +7,7 @@ import numpy as np
 from ase import Atoms, build
 
 from tce.structures import Supercell
-from tce.training import TrainingContainer
+from tce.training import CEModel
 
 
 LOGGER = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class TwoParticleSwap(MCStep):
 
 def monte_carlo(
     supercell: Supercell,
-    training_container: TrainingContainer,
+    model: CEModel,
     initial_types: np.typing.NDArray[np.integer],
     num_steps: int,
     beta: float,
@@ -78,9 +78,9 @@ def monte_carlo(
     Args:
         supercell (Supercell):
             Supercell instance defining lattice
-        training_container (TrainingContainer):
-            Container defining training data. See `tce.training.TrainingContainer` for more info. This will usually
-            be created by `tce.training.TrainingContainer.from_ase`.
+        model (CEModel):
+            Container defining training data. See `tce.training.CEModel` for more info. This will usually
+            be created by `tce.training.TrainingMethod.fit`.
         initial_types (np.typing.NDArray[int]):
             Initial types occupying lattice sites. This should be a 1D array of integers. For example, for a 4-site
             solid with type map defined by:
@@ -110,8 +110,8 @@ def monte_carlo(
 
     """
 
-    assert supercell.lattice_structure == training_container.lattice_structure
-    assert supercell.lattice_parameter == training_container.lattice_parameter
+    assert supercell.lattice_structure == model.cluster_basis.lattice_structure
+    assert supercell.lattice_parameter == model.cluster_basis.lattice_parameter
 
     if not generator:
         generator = np.random.default_rng(seed=0)
@@ -119,15 +119,15 @@ def monte_carlo(
     if not mc_step:
         mc_step = TwoParticleSwap(generator=generator)
 
-    num_types = len(training_container.type_map)
+    num_types = len(model.type_map)
 
     ase_supercell = build.bulk(
-        training_container.type_map[0],
+        model.type_map[0],
         crystalstructure=supercell.lattice_structure.name.lower(),
         a=supercell.lattice_parameter,
         cubic=True,
     ).repeat(supercell.size)
-    ase_supercell.symbols = training_container.type_map[initial_types]
+    ase_supercell.symbols = model.type_map[initial_types]
 
     state_matrix = np.zeros((supercell.num_sites, num_types), dtype=int)
     state_matrix[np.arange(supercell.num_sites), initial_types] = 1
@@ -140,17 +140,17 @@ def monte_carlo(
         if not step % save_every:
             _, types = np.where(state_matrix)
             atoms = ase_supercell.copy()
-            atoms.set_chemical_symbols(symbols=training_container.type_map[types])
+            atoms.set_chemical_symbols(symbols=model.type_map[types])
             trajectory.append(atoms)
             LOGGER.info(f"saved configuration at step {step:.0f}/{num_steps:.0f}")
 
         new_state_matrix = mc_step.step(state_matrix)
         feature_diff = supercell.clever_feature_diff(
             state_matrix, new_state_matrix,
-            max_adjacency_order=training_container.max_adjacency_order,
-            max_triplet_order=training_container.max_triplet_order
+            max_adjacency_order=model.cluster_basis.max_adjacency_order,
+            max_triplet_order=model.cluster_basis.max_triplet_order
         )
-        energy_diff = training_container.interaction_vector @ feature_diff
+        energy_diff = model.interaction_vector @ feature_diff
         if np.exp(-beta * energy_diff) > 1.0 - generator.random():
             LOGGER.info(f"move accepted with energy difference {energy_diff:.3f}")
             state_matrix = new_state_matrix

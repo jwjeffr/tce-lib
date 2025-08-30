@@ -6,7 +6,7 @@ import numpy as np
 import requests
 
 from tce.constants import LatticeStructure
-from tce.training import TrainingContainer
+from tce.training import ClusterBasis, LimitingRidge
 
 
 def main():
@@ -42,15 +42,17 @@ def main():
         configuration.calc = EAM(potential=potential)
         configurations.append(configuration)
 
-    container = TrainingContainer.from_ase_atoms(
-        configurations=configurations,
-        lattice_parameter=lattice_parameter,
-        lattice_structure=lattice_structure,
-        max_adjacency_order=3,
-        max_triplet_order=2,
-        type_map=species
+    model = LimitingRidge().fit(
+        configurations,
+        basis=ClusterBasis(
+            lattice_structure=lattice_structure,
+            lattice_parameter=lattice_parameter,
+            max_adjacency_order=3,
+            max_triplet_order=2
+        )
     )
-    container.to_npz(path=Path("CuNi.npz"))
+
+    model.save(Path("CuNi.npz"))
 
 
 if __name__ == "__main__":

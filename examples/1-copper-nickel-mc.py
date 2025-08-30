@@ -6,7 +6,7 @@ import numpy as np
 from ase import io
 
 from tce.structures import Supercell
-from tce.training import TrainingContainer
+from tce.training import CEModel
 from tce.monte_carlo import monte_carlo
 
 
@@ -14,17 +14,18 @@ def main():
 
     rng = np.random.default_rng(seed=0)
 
-    training_container = TrainingContainer.from_npz(Path("CuNi.npz"))
+    model = CEModel.load(Path("CuNi.npz"))
+
     supercell = Supercell(
-        lattice_structure=training_container.lattice_structure,
-        lattice_parameter=training_container.lattice_parameter,
+        lattice_structure=model.cluster_basis.lattice_structure,
+        lattice_parameter=model.cluster_basis.lattice_parameter,
         size=(10, 10, 10)
     )
 
     trajectory = monte_carlo(
         supercell=supercell,
-        training_container=training_container,
-        initial_types=rng.integers(len(training_container.type_map), size=supercell.num_sites),
+        model=model,
+        initial_types=rng.integers(len(model.type_map), size=supercell.num_sites),
         num_steps=10_000,
         beta=19.341,
         save_every=100

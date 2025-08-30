@@ -91,9 +91,8 @@ basic (which is a good thing for you!).
 The first script is training a CuNi model using an EAM potential from Fischer et al.
 (paper [here](https://doi.org/10.1016/j.actamat.2019.06.027)). In this script, we generate a bunch of random CuNi
 solid solutions, attach an `ase.calculators.eam.EAM` calculator to each configuration, compute their energies, and
-then train using the `tce.training.TrainingContainer` object, which is just a container of information about the
-trained model. Note that the method `tce.training.TrainingContainer.from_ase_atoms` is doing the training in the
-background. The container is then saved to be used for later.
+then train using the `tce.training.TrainingMethod.fit` method, which returns a `tce.training.CEModel` instance. The
+container is then saved to be used for later.
 
 **IMPORTANT**: These are unrelaxed energies! A real production environment should optimize the structure - see the
 prior example on how to do this within a LAMMPS calculator.
@@ -132,11 +131,24 @@ reach steady state.
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png)
 """
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
 
+import warnings
+
 from . import constants as constants
 from . import structures as structures
 from . import topology as topology
+
+
+if __version__.startswith("0."):
+    warnings.simplefilter("once", UserWarning)
+
+    warnings.warn(
+        f"{__name__} is in alpha. APIs are unstable and may change without notice."
+        f"Please report any problems at {__url__}/issues",
+        UserWarning,
+        stacklevel=2,
+    )
