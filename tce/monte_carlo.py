@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import logging
@@ -71,6 +71,7 @@ def monte_carlo(
     save_every: int = 1,
     generator: Optional[np.random.Generator] = None,
     mc_step: Optional[MCStep] = None,
+    callback: Optional[Callable[[int, int], None]] = None
 ) -> list[Atoms]:
 
     r"""
@@ -108,6 +109,9 @@ def monte_carlo(
             Generator instance drawing random numbers. If not specified, set to `np.random.default_rng(seed=0)`
         mc_step (Optional[MCStep]):
             Monte Carlo simulation step. If not specified, set to an instance of `TwoParticleSwap`
+        callback (Optional[Callable[[int, int], None]]):
+            Optional callback function that will be called after each step. Will take in the current step and the
+            number of overall steps. If not specified, defaults to a call to LOGGER.info
 
     """
 
@@ -118,9 +122,11 @@ def monte_carlo(
 
     if not generator:
         generator = np.random.default_rng(seed=0)
-
     if not mc_step:
         mc_step = TwoParticleSwap(generator=generator)
+    if not callback:
+        def callback(step_: int, num_steps_: int):
+            LOGGER.info(f"MC step {step_:.0f}/{num_steps_:.0f}")
 
     num_types = len(model.type_map)
 
@@ -143,7 +149,8 @@ def monte_carlo(
     )
     for step in range(num_steps):
 
-        LOGGER.info(f"MC step {step:.0f}/{num_steps:.0f}")
+        # LOGGER.info(f"MC step {step:.0f}/{num_steps:.0f}")
+        callback(step, num_steps)
 
         if not step % save_every:
             _, types = np.where(state_matrix)

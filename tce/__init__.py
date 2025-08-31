@@ -176,9 +176,45 @@ other scalar properties.
 ```py
 .. include:: ../examples/4-tensorial-property.py
 ```
+
+## 🔔 Callback functionality
+
+The `tce.monte_carlo.monte_carlo` routine also has a `callback` argument that lets you inject a notification system
+into the Monte Carlo run. This argument needs to be a function with signature:
+
+```py
+def callback(step: int, num_steps: int) -> None:
+    ...
+```
+
+If it is not provided, it defaults to calling the `logging` library:
+
+```py
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
+def callback(step_: int, num_steps_: int):
+    LOGGER.info(f"MC step {step_:.0f}/{num_steps_:.0f}")
+```
+
+But, you can do very cool things with this. It's a bit of a cute example that might not be practical, but you can
+send notifications to third party systems like [Discord](https://en.wikipedia.org/wiki/Discord) using webhooks.
+
+```py
+.. include:: ../examples/5-callbacking.py
+```
+
+which will send a notification in whatever Discord channel once the MC run is finished. See
+[Discord's documentation on webhooks](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) for
+a tutorial on how to set up your own webhook URL. You can get really creative here too, like Slack's similar
+functionality [here](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/), or the
+[Gmail API](https://developers.google.com/workspace/gmail/api/guides). None of these are particularly useful for what I
+have done above (sending a single email once the run is finished), but really shine for long runs where you want to
+be periodicially notified.
 """
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
