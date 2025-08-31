@@ -30,7 +30,6 @@ def main():
     axs[1].set_xlabel("Monte Carlo frame")
     axs[1].set_ylabel("potential energy (eV / atom)")
     plt.tight_layout()
-    plt.show()
     plt.savefig("cu-ni-sro.png", dpi=800, bbox_inches="tight")
 
 
