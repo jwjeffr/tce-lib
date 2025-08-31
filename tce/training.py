@@ -120,7 +120,7 @@ def get_data_pairs(
 
     feature_size = basis.max_adjacency_order * num_types ** 2 + basis.max_triplet_order * num_types ** 3
     X = np.zeros((len(configurations), feature_size))
-    y = [None] * len(configurations)
+    y: list[Union[float, np.typing.NDArray[np.floating]]] = [np.nan] * len(configurations)
 
     for index, atoms in enumerate(configurations):
 
