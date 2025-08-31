@@ -1,10 +1,22 @@
 from typing import Callable
+import re
 
 import pytest
 import numpy as np
+from ase import build
+from ase.calculators.singlepoint import SinglePointCalculator
 
+import tce
 from tce.constants import LatticeStructure
 from tce.structures import Supercell
+from tce.training import (
+    LimitingRidge,
+    ClusterBasis,
+    INCOMPATIBLE_GEOMETRY_MESSAGE,
+    NO_POTENTIAL_ENERGY_MESSAGE,
+    NON_CUBIC_CELL_MESSAGE,
+    LARGE_SYSTEM_MESSAGE
+)
 
 
 @pytest.fixture
@@ -81,3 +93,88 @@ def test_feature_vector_shortcut(lattice_structure: LatticeStructure, get_superc
     naive_diff = new_feature_vector - feature_vector
 
     assert np.all(naive_diff == clever_diff)
+
+
+def test_noncubic_cell_raises_value_error():
+
+    configurations = [
+        build.bulk("Fe", crystalstructure="bcc", a=2.7, cubic=False).repeat((2, 2, 2)),
+        build.bulk("Cr", crystalstructure="bcc", a=2.7, cubic=False).repeat((3, 3, 3))
+    ]
+    for configuration in configurations:
+        configuration.calc = SinglePointCalculator(configuration, energy=-1.0)
+
+    with pytest.raises(ValueError, match=NON_CUBIC_CELL_MESSAGE):
+        _ = LimitingRidge().fit(
+            configurations,
+            basis=ClusterBasis(
+                lattice_structure=LatticeStructure.BCC,
+                lattice_parameter=2.7,
+                max_adjacency_order=3,
+                max_triplet_order=1
+            )
+        )
+
+
+def test_inconsistent_geometry_raises_value_error():
+
+    configurations = [
+        build.bulk("Fe", crystalstructure="bcc", a=2.7, cubic=True).repeat((2, 2, 2)),
+        build.bulk("Fe", crystalstructure="fcc", a=2.7, cubic=True).repeat((3, 3, 3))
+    ]
+
+    for configuration in configurations:
+        configuration.calc = SinglePointCalculator(configuration, energy=-1.0)
+
+    with pytest.raises(ValueError, match=INCOMPATIBLE_GEOMETRY_MESSAGE):
+        _ = LimitingRidge().fit(
+            configurations,
+            basis=ClusterBasis(
+                lattice_structure=LatticeStructure.BCC,
+                lattice_parameter=2.7,
+                max_adjacency_order=3,
+                max_triplet_order=1
+            )
+        )
+
+
+def test_no_energy_computation_raises_value_error():
+
+    configurations = [
+        build.bulk("Fe", crystalstructure="bcc", a=2.7, cubic=True).repeat((2, 2, 2)),
+        build.bulk("Cr", crystalstructure="bcc", a=2.7, cubic=True).repeat((3, 3, 3))
+    ]
+
+    with pytest.raises(ValueError, match=NO_POTENTIAL_ENERGY_MESSAGE):
+        _ = LimitingRidge().fit(
+            configurations,
+            basis=ClusterBasis(
+                lattice_structure=LatticeStructure.BCC,
+                lattice_parameter=2.7,
+                max_adjacency_order=3,
+                max_triplet_order=1
+            )
+        )
+
+
+def test_large_system_in_training(monkeypatch):
+
+    with monkeypatch.context() as m:
+
+        m.setattr("tce.training.LARGE_SYSTEM_THRESHOLD", 10)
+
+        configurations = [
+            build.bulk("Fe", crystalstructure="bcc", a=2.7, cubic=True).repeat((2, 2, 2)),
+        ]
+        configurations[0].calc = SinglePointCalculator(configurations[0], energy=-1.0)
+
+        with pytest.warns(UserWarning, match=re.escape(LARGE_SYSTEM_MESSAGE)):
+            _ = tce.training.LimitingRidge().fit(
+                configurations,
+                basis=ClusterBasis(
+                    lattice_structure=LatticeStructure.BCC,
+                    lattice_parameter=2.7,
+                    max_adjacency_order=3,
+                    max_triplet_order=1
+                )
+            )

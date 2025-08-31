@@ -160,7 +160,7 @@ should decrease.
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/regularization.png)
 """
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"

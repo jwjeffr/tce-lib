@@ -1,13 +1,24 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pathlib import Path
+import warnings
 
 import numpy as np
 from scipy.spatial import KDTree
 from ase import Atoms
 
-from tce.constants import LatticeStructure, STRUCTURE_TO_CUTOFF_LISTS
+from tce.constants import LatticeStructure, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_ATOMIC_BASIS
 from tce.topology import get_adjacency_tensors, get_three_body_tensors, get_feature_vector
+
+
+NON_CUBIC_CELL_MESSAGE = "At least one of your configurations has a non-cubic cell. For now, tce-lib does not support non-cubic lattices."
+
+INCOMPATIBLE_GEOMETRY_MESSAGE = "Geometry in all configurations must match geometry in cluster basis."
+
+NO_POTENTIAL_ENERGY_MESSAGE = "At least one of your configurations does not have a computable potential energy."
+
+LARGE_SYSTEM_THRESHOLD = 1_000
+LARGE_SYSTEM_MESSAGE = f"You have passed a relatively large system (larger than {LARGE_SYSTEM_THRESHOLD:.0f}) as a training point. This will be very slow."
 
 
 @dataclass
@@ -72,6 +83,19 @@ def get_data_pairs(
     basis: ClusterBasis
 ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
 
+    basis_atomic_volume = basis.lattice_parameter ** 3 / len(STRUCTURE_TO_ATOMIC_BASIS[basis.lattice_structure])
+    for configuration in configurations:
+
+        if np.any(configuration.get_cell().angles() != 90.0 * np.ones(3)):
+            raise ValueError(NON_CUBIC_CELL_MESSAGE)
+
+        configuration_atomic_volume = configuration.get_volume() / len(configuration)
+        if not np.isclose(configuration_atomic_volume, basis_atomic_volume):
+            raise ValueError(INCOMPATIBLE_GEOMETRY_MESSAGE)
+
+        if len(configuration) > LARGE_SYSTEM_THRESHOLD:
+            warnings.warn(LARGE_SYSTEM_MESSAGE, UserWarning)
+
     # not all configurations need to have the same number of types, calculate the union of types
     all_types = set.union(*(set(x.get_chemical_symbols()) for x in configurations))
     type_map = np.array(sorted(list(all_types)))
@@ -84,6 +108,11 @@ def get_data_pairs(
     y = np.zeros(len(configurations))
 
     for index, atoms in enumerate(configurations):
+        try:
+            y[index] = atoms.get_potential_energy()
+        except RuntimeError as e:
+            raise ValueError(NO_POTENTIAL_ENERGY_MESSAGE) from e
+
         tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
         adjacency_tensors = get_adjacency_tensors(
             tree=tree,
@@ -106,8 +135,6 @@ def get_data_pairs(
             three_body_tensors=three_body_tensors,
             state_matrix=state_matrix
         )
-
-        y[index] = atoms.get_potential_energy()
 
     return X, y
 
