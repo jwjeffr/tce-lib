@@ -29,8 +29,8 @@ def main():
     axs[1].grid()
     axs[1].set_xlabel("Monte Carlo frame")
     axs[1].set_ylabel("potential energy (eV / atom)")
-    plt.tight_layout()
-    plt.savefig("cu-ni-sro.png", dpi=800, bbox_inches="tight")
+    fig.tight_layout()
+    fig.savefig("cu-ni-sro.png", dpi=800, bbox_inches="tight")
 
 
 if __name__ == "__main__":

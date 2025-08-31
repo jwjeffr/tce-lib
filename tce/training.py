@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Callable, TypeAlias, Union, Optional
 import warnings
 
 import numpy as np
@@ -78,9 +79,20 @@ class CEModel:
         )
 
 
+PropertyComputer: TypeAlias = Callable[[Atoms], Union[float, np.typing.NDArray[np.floating]]]
+
+def total_energy(atoms: Atoms) -> float:
+
+    try:
+        return atoms.get_potential_energy()
+    except RuntimeError as e:
+        raise ValueError(NO_POTENTIAL_ENERGY_MESSAGE) from e
+
+
 def get_data_pairs(
     configurations: list[Atoms],
-    basis: ClusterBasis
+    basis: ClusterBasis,
+    target_property_computer: Optional[PropertyComputer] = None
 ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
 
     basis_atomic_volume = basis.lattice_parameter ** 3 / len(STRUCTURE_TO_ATOMIC_BASIS[basis.lattice_structure])
@@ -96,6 +108,9 @@ def get_data_pairs(
         if len(configuration) > LARGE_SYSTEM_THRESHOLD:
             warnings.warn(LARGE_SYSTEM_MESSAGE, UserWarning)
 
+    if not target_property_computer:
+        target_property_computer = total_energy
+
     # not all configurations need to have the same number of types, calculate the union of types
     all_types = set.union(*(set(x.get_chemical_symbols()) for x in configurations))
     type_map = np.array(sorted(list(all_types)))
@@ -105,13 +120,11 @@ def get_data_pairs(
 
     feature_size = basis.max_adjacency_order * num_types ** 2 + basis.max_triplet_order * num_types ** 3
     X = np.zeros((len(configurations), feature_size))
-    y = np.zeros(len(configurations))
+    y = [None] * len(configurations)
 
     for index, atoms in enumerate(configurations):
-        try:
-            y[index] = atoms.get_potential_energy()
-        except RuntimeError as e:
-            raise ValueError(NO_POTENTIAL_ENERGY_MESSAGE) from e
+
+        y[index] = target_property_computer(atoms)
 
         tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
         adjacency_tensors = get_adjacency_tensors(
@@ -136,7 +149,7 @@ def get_data_pairs(
             state_matrix=state_matrix
         )
 
-    return X, y
+    return X, np.array(y)
 
 
 @dataclass
@@ -148,7 +161,12 @@ class TrainingMethod(ABC):
     """
 
     @abstractmethod
-    def fit(self, configurations: list[Atoms], basis: ClusterBasis) -> CEModel:
+    def fit(
+        self,
+        configurations: list[Atoms],
+        basis: ClusterBasis,
+        property_computer: Optional[PropertyComputer] = None
+    ) -> CEModel:
 
         r"""
         Train method for model training.
@@ -158,6 +176,9 @@ class TrainingMethod(ABC):
                 list of configurations to train the model for
             basis (ClusterBasis):
                 trained model basis
+            property_computer (PropertyComputer):
+                optional property computer, which computes a property from an `ase.Atoms` object. if not specified,
+                set to compute total energy
         """
 
         pass
@@ -175,7 +196,12 @@ class LimitingRidge(TrainingMethod):
     where $X^+$ denotes the [Moore-Penrose inverse](https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_inverse).
     """
 
-    def fit(self, configurations: list[Atoms], basis: ClusterBasis) -> CEModel:
+    def fit(
+        self,
+        configurations: list[Atoms],
+        basis: ClusterBasis,
+        property_computer: Optional[PropertyComputer] = None
+    ) -> CEModel:
 
         r"""
         Train method for model training.
@@ -185,12 +211,15 @@ class LimitingRidge(TrainingMethod):
                 list of configurations to train the model for
             basis (ClusterBasis):
                 trained model basis
+            property_computer (PropertyComputer):
+                optional property computer, which computes a property from an `ase.Atoms` object. if not specified,
+                set to compute total energy
         """
 
         # not all configurations need to have the same number of types, calculate the union of types
         all_types = set.union(*(set(x.get_chemical_symbols()) for x in configurations))
         type_map = np.array(sorted(list(all_types)))
 
-        X, y = get_data_pairs(configurations, basis)
+        X, y = get_data_pairs(configurations, basis, target_property_computer=property_computer)
 
         return CEModel(cluster_basis=basis, interaction_vector=np.linalg.pinv(X) @ y, type_map=type_map)

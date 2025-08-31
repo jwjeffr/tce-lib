@@ -158,9 +158,27 @@ should decrease.
     alt="Lasso regularization"
     title="Lasso"
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/regularization.png)
+
+
+🧲 Learning a tensorial property
+
+In general, one might also want to learn tensorial properties. This can be done by vectorizing the property in some
+way, like [Voigt notation](https://en.wikipedia.org/wiki/Voigt_notation):
+
+$$ \sigma = (\sigma_{xx}, \sigma_{yy}, \sigma_{zz}, \sigma_{yz}, \sigma_{xz}, \sigma_{xy}) $$
+
+Below is an example of changing the target property to stress rather than energy. It also showcases an important point
+about `tce-lib`: our feature vectors are **extensive**, not intensive like other CE libraries. This matters when
+training on intensive properties, like stress. Here, we need to actually train on an "extensive" version of stress, and
+we can just make it intensive later. Of course, it is also fine to use this same pattern to train a CE model on
+other scalar properties.
+
+```py
+.. include:: ../examples/4-tensorial-property.py
+```
 """
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
