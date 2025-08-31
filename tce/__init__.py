@@ -160,7 +160,7 @@ should decrease.
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/regularization.png)
 
 
-🧲 Learning a tensorial property
+## 🧲 Learning a tensorial property
 
 In general, one might also want to learn tensorial properties. This can be done by vectorizing the property in some
 way, like [Voigt notation](https://en.wikipedia.org/wiki/Voigt_notation):
