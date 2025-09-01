@@ -1,12 +1,17 @@
 # tce-lib
 
-Library for building a tensor cluster expansion
-
 [![Custom shields.io](https://img.shields.io/badge/docs-brightgreen?logo=github&logoColor=green&label=gh-pages)](https://muexly.github.io/tce-lib)
+[![Linting: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![Tested with pytest](https://img.shields.io/badge/pytest-tested-blue?logo=pytest)](https://docs.pytest.org/en/stable/)
 
-## 🔎 What is tce?
+<img src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/assets/logo.png" alt="tce-lib logo" style="width:50%;height:auto;">
 
-Placeholder text
+
+## 🔎 What is tce-lib?
+
+`tce-lib` is a library for creating and deploying tensor cluster expansion models of concentrated alloys following
+our work on [arXiv](https://google.com/).
 
 ## 📩 Installation
 
@@ -37,4 +42,4 @@ Please open an issue [here](https://github.com/MUEXLY/tce/issues), with a descri
 
 ## 📑 License
 
-`tce-lib` is released under the MIT license
+`tce-lib` is released under the MIT license.

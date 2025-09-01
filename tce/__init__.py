@@ -268,7 +268,7 @@ then make the property intensive later, as done in
 
 """
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
