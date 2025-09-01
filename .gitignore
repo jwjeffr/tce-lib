@@ -186,3 +186,4 @@ trash
 
 # file for creating logo and favicon
 assets/favicon.py
+assets/logo.py
