@@ -239,9 +239,36 @@ functionality [here](https://docs.slack.dev/messaging/sending-messages-using-inc
 [Gmail API](https://developers.google.com/workspace/gmail/api/guides). None of these are particularly useful for what I
 have done above (sending a single email once the run is finished), but really shine for long runs where you want to
 be periodicially notified.
+
+# Sharp Edges
+
+`tce-lib` has a couple of sharp edges (or gotcha's) that one needs to look out for.
+
+## Extensivity of features
+
+In traditional cluster expansion packages, correlation functions are usually intensive (i.e. independent of size). This
+is not the case for `tce-lib`. We can showcase this by creating some feature vectors for an FCC lattice of varying
+sizes:
+
+```py
+.. include:: ../examples/size-dependence.py
+```
+
+[<img
+    src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/size-dependence.png"
+    width=100%
+    alt="Size dependence of features"
+    title="Size dependence"
+/>](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/size-dependence.png)
+
+So, be careful if you are training an intensive property! By default, you will be training intensive properties on
+extensive features, which does not make sense. You can fix this by training on an equivalent extensive feature, and
+then make the property intensive later, as done in
+[the stress example above](https://muexly.github.io/tce-lib/tce.html#learning-a-tensorial-property).
+
 """
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
