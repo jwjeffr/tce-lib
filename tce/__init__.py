@@ -131,6 +131,33 @@ run stores this information using `ase.calculators.singlepoint.SinglePointCalcul
     title="SRO parameter"
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sro.png)
 
+We can also use the model to sample a different ensemble. For the prototypical canonical ensemble, the acceptance rule
+for a swap with energy difference $\Delta E$ is $\exp(-\beta\Delta E) > u$, where $u$ is a random number drawn from
+$[0, 1]$. For the grand canonical ensemble, the acceptance rule is instead:
+
+$$ \exp\left(-\beta\left(\Delta E - \sum_\alpha \mu_\alpha \Delta N_\alpha\right)\right) = \exp\left(-\beta\left(\Delta E - \boldsymbol{\mu}\cdot\Delta \mathbf{N}\right)\right) > u $$
+
+where $\mu_\alpha$ is the chemical potential of type $\alpha$ and $\Delta N_\alpha$ is the change in the number of
+$\alpha$ atoms in the swap. You can inject this into `tce.monte_carlo.monte_carlo` by defining an `energy_modifier`,
+which adds a term to $\Delta E$:
+
+```py
+.. include:: ../examples/1-copper-nickel-mc2.py
+```
+
+We also can specify our own Monte Carlo step, which is done above. This plot generates a curve which is useful for
+computing phase diagrams:
+
+[<img
+    src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sgcmc.png"
+    width=100%
+    alt="CuNi SGCMC curve"
+    title="CuNi curve"
+/>](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sgcmc.png)
+
+Note that the curve is continuous, which denotes no phase transitions at the temperature. This matches experimental
+phase diagrams - CuNi forms a solid solution along the whole composition range.
+
 ## 💻 Custom Training (Advanced)
 
 Below is an example of using a custom training method to train the CE model. There are many reasons one might want to do
@@ -214,7 +241,7 @@ have done above (sending a single email once the run is finished), but really sh
 be periodicially notified.
 """
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"

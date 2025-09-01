@@ -71,6 +71,7 @@ def monte_carlo(
     save_every: int = 1,
     generator: Optional[np.random.Generator] = None,
     mc_step: Optional[MCStep] = None,
+    energy_modifier: Optional[Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]] = None,
     callback: Optional[Callable[[int, int], None]] = None
 ) -> list[Atoms]:
 
@@ -95,7 +96,7 @@ def monte_carlo(
 
             initial_types: np.typing.NDArray[np.integer] = np.array([1, 0, 0, 1])
             ```
-            which defines the first site having a Cr atom, the second site having an Fe atom, etc
+            which defines the first site having a Cr atom, the second site having a Fe atom, etc.
         num_steps (int):
             Number of Monte Carlo steps to perform
         beta (float):
@@ -109,6 +110,16 @@ def monte_carlo(
             Generator instance drawing random numbers. If not specified, set to `np.random.default_rng(seed=0)`
         mc_step (Optional[MCStep]):
             Monte Carlo simulation step. If not specified, set to an instance of `TwoParticleSwap`
+        energy_modifier (Optional[Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]]):
+            Energy modifier when performing MC run. Each acceptance rule looks very similar for different ensembles,
+            i.e. if $\exp(-\beta \Delta H) > u$, where $u$ is a random number drawn from $[0, 1]$, then accept the swap.
+            $\Delta H$, generally, is of the form:
+            $$ \Delta H = \Delta E + f(\mathbf{X}, \mathbf{X}') $$
+            For example, for the [grand canonical ensemble](https://en.wikipedia.org/wiki/Grand_canonical_ensemble):
+            $$ f(\mathbf{X}, \mathbf{X}') = -\sum_\alpha \mu_\alpha\Delta N_\alpha $$
+            where $\mu_\alpha$ is the chemical potential of type $\alpha$ and $\Delta N_\alpha$ is change in the number
+            of $\alpha$ atoms upon swapping. If unspecified, then energy is not modified throughout the run, which
+            samples the [canonical ensemble](https://en.wikipedia.org/wiki/Canonical_ensemble).
         callback (Optional[Callable[[int, int], None]]):
             Optional callback function that will be called after each step. Will take in the current step and the
             number of overall steps. If not specified, defaults to a call to LOGGER.info
@@ -149,7 +160,6 @@ def monte_carlo(
     )
     for step in range(num_steps):
 
-        # LOGGER.info(f"MC step {step:.0f}/{num_steps:.0f}")
         callback(step, num_steps)
 
         if not step % save_every:
@@ -167,8 +177,11 @@ def monte_carlo(
             max_triplet_order=model.cluster_basis.max_triplet_order
         )
         energy_diff = model.interaction_vector @ feature_diff
-        if np.exp(-beta * energy_diff) > 1.0 - generator.random():
-            LOGGER.info(f"move accepted with energy difference {energy_diff:.3f}")
+        modified_energy = energy_diff
+        if energy_modifier:
+            modified_energy += energy_modifier(state_matrix, new_state_matrix)
+        if np.exp(-beta * modified_energy) > 1.0 - generator.random():
+            LOGGER.debug(f"move accepted with energy difference {energy_diff:.3f}")
             state_matrix = new_state_matrix
             energy += energy_diff
 
