@@ -57,9 +57,9 @@ jobs:
           pip install .[examples]
       - name: Run example scripts
         # need to skip the lammps example, github actions won't have lammps
-        # need to skip sro example too :( github runners missing libEGL.so.1 for ovito library
+        # need to skip ovito examples too :( github runners missing libEGL.so.1 for ovito library
         run: >-
-          for file in examples/*.py; do case "$file" in *2-copper-nickel-sro.py|*iron-chrome-lammps.py) ;; *) python "$file";; esac; done
+          for file in examples/*.py; do case "$file" in *2-copper-nickel-sro.py|*iron-chrome-lammps.py|*load-dataset-and-visualize.py) ;; *) python "$file";; esac; done
         env:
           DISCORD_WEBHOOK_URL: ${{secrets.DISCORD_WEBHOOK_URL}}
 
