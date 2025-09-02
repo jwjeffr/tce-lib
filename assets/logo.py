@@ -1,6 +1,6 @@
-from typing import Callable
+from typing import Callable, TypeAlias, Mapping
 from itertools import pairwise
-from functools import wraps, partial
+from functools import wraps
 
 from ase import Atoms
 import numpy as np
@@ -13,30 +13,41 @@ from tce.structures import Supercell
 from tce.constants import LatticeStructure
 
 
+Modifier: TypeAlias = Callable[[int, DataCollection], None]
+
+
 COLORS = {
     1: (0.97, 0.40, 0.08),
     2: (0.32, 0.18, 0.50)
 }
 
 
-def type_map_modifier(frame: int, data: DataCollection, color_map: dict) -> None:
+def set_colors_modifier(color_map: Mapping[int, tuple[float, float, float]]) -> Modifier:
 
-    # get integer labels of types
-    types = data.particles_.particle_types_
+    @wraps(set_colors_modifier)
+    def wrapper(frame: int, data: DataCollection) -> None:
+        types = data.particles_.particle_types_
 
-    # assign atom type name and radius to types
-    for key, color in color_map.items():
-        types.type_by_id_(key).color = color
+        # assign atom type name and radius to types
+        for key, color in color_map.items():
+            types.type_by_id_(key).color = color
 
-def smaller_radius_modifier(frame: int, data: DataCollection) -> None:
-
-    # get integer labels of types
-    types = data.particles_.particle_types_
-    for unique_type in np.unique(types[...]):
-        types.type_by_id_(unique_type).radius = 0.75 * types.type_by_id_(unique_type).radius
+    return wrapper
 
 
-def make_bonds_modifier(groups: list[list[int]]) -> Callable[[int, DataCollection], None]:
+def smaller_radius_modifier(multiplier: float) -> Modifier:
+
+    @wraps(smaller_radius_modifier)
+    def wrapper(frame: int, data: DataCollection) -> None:
+
+        types = data.particles_.particle_types_
+        for unique_type in np.unique(types[...]):
+            types.type_by_id_(unique_type).radius = multiplier * types.type_by_id_(unique_type).radius
+
+    return wrapper
+
+
+def make_bonds_modifier(groups: list[list[int]]) -> Modifier:
 
     @wraps(make_bonds_modifier)
     def wrapper(frame: int, data: DataCollection) -> None:
@@ -47,7 +58,7 @@ def make_bonds_modifier(groups: list[list[int]]) -> Callable[[int, DataCollectio
                 topology.add(pair)
             topology.add((group[-1], group[0]))
         bonds = data.particles_.create_bonds(count=len(topology))
-        bonds.create_property('Topology', data=list(topology))
+        bonds.create_property("Topology", data=list(topology))
 
         transparency = np.zeros(len(data.particles_.positions))
         flattened_groups = set(sum(groups, []))
@@ -92,8 +103,8 @@ def main():
     source = StaticSource(data=ase_to_ovito(atoms))
     source.data.cell.vis.enabled = False
     pipeline = Pipeline(source=source)
-    pipeline.modifiers.append(smaller_radius_modifier)
-    pipeline.modifiers.append(partial(type_map_modifier, color_map=COLORS))
+    pipeline.modifiers.append(smaller_radius_modifier(multiplier=0.75))
+    pipeline.modifiers.append(set_colors_modifier(color_map=COLORS))
     pipeline.modifiers.append(make_bonds_modifier(groups=groups))
     pipeline.add_to_scene()
 
