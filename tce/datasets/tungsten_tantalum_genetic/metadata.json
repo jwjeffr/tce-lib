@@ -1,0 +1,6 @@
+{
+    "lattice_parameter": 3.194,
+    "lattice_structure": "bcc",
+    "description": "TaW data generated genetically from 5 starting seeds using VASP",
+    "contact_info": "Jacob Jeffries, jwjeffr@clemson.edu"
+}

@@ -1,0 +1,6 @@
+{
+    "lattice_parameter": 3.6,
+    "lattice_structure": "fcc",
+    "description": "CoNiCrFeMn data generated from surrogate models",
+    "contact_info": "Jacob Jeffries, jwjeffr@clemson.edu"
+}

@@ -240,6 +240,36 @@ functionality [here](https://docs.slack.dev/messaging/sending-messages-using-inc
 have done above (sending a single email once the run is finished), but really shine for long runs where you want to
 be periodicially notified.
 
+## 🕵️ Loading and Visualizing Datasets
+
+Below is an example of using one of our pre-set training datasets using `tce.datasets`. When you install `tce-lib`, you
+automatically install some toy datasets that are mostly of pedagogical benefit, i.e. you can look at one of these datasets 
+and see examples of what you can train on. Since `ovito` has an `ase` interface, you can also use `ovito` to visualize the 
+dataset, which might be of interest.
+
+```py
+.. include:: ../examples/load-dataset-and-visualize.py
+```
+
+which generates the figure below:
+
+[<img
+    src="https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/visualized.png"
+    width=100%
+    alt="TaW dataset visualization from genetic algorithm"
+    title="TaW"
+/>](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/visualized.png)
+
+Each dataset has a metadata object as well, which is stored in `json` format:
+
+```json
+.. include:: ../tce/datasets/tungsten_tantalum_genetic/metadata.json
+```
+
+which tells you some info, and (should) additionally give you contact information to inquire about the dataset. Note
+that `tce.datasets.Dataset.configurations` is of type `list[ase.Atoms]`, so you can directly plug this into a training
+routine. Please contact me directly (email above) if you have datasets you would like to be added 😊
+
 # Sharp Edges
 
 `tce-lib` has a couple of sharp edges (or gotcha's) that one needs to look out for.
