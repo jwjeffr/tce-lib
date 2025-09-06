@@ -1,3 +1,8 @@
+r"""
+This model mostly defines the `tce.structures.Supercell` object, which is mostly intended to be a private object. This
+is what `tce.monte_carlo.monte_carlo` uses internally to avoid recomputing large topological tensors.
+"""
+
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from typing import Union
@@ -19,8 +24,13 @@ class Supercell:
     """
 
     lattice_structure: LatticeStructure
+    r"""lattice structure of the unit cell"""
+
     lattice_parameter: float
+    r"""lattice parameter of the unit cell"""
+
     size: tuple[int, int, int]
+    r"""size of the supercell, eg `size=(10, 10, 10)` generates a $10\times 10\times 10$ supercell"""
 
     @cached_property
     def num_sites(self) -> Union[int, np.integer]:

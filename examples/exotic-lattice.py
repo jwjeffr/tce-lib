@@ -1,6 +1,6 @@
 from aenum import extend_enum
 import numpy as np
-from ase import build, io
+from ase import build
 
 import tce
 
@@ -52,7 +52,6 @@ def main():
         cubic=True
     ).repeat((3, 3, 3))
     atoms.symbols = rng.choice(species, p=[0.3, 0.7], size=len(atoms))
-    io.write("test.xyz", atoms)
 
     feature_vector = feature_vector_computer(atoms)
     print(feature_vector)

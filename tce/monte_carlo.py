@@ -1,3 +1,9 @@
+r"""
+This module defines some convenience wrappers for running a Monte Carlo simulation from a fitted cluster expansion
+model.
+"""
+
+
 from typing import Optional, Callable, TypeAlias
 import logging
 from functools import wraps
@@ -11,13 +17,24 @@ from tce.training import ClusterExpansion
 
 
 LOGGER = logging.getLogger(__name__)
-rf"""logger for submodule {__name__}"""
+"""@private"""
 
 
 MCStep: TypeAlias = Callable[[np.typing.NDArray[np.floating]], np.typing.NDArray[np.floating]]
+r"""
+Type alias defining what a step in a monte carlo simulation looks like. In general, a step should look like a function 
+that takes in a state matrix $\mathbf{X}$, and returns a new one.
+"""
 
 
 def two_particle_swap_factory(generator: np.random.Generator) -> MCStep:
+
+    r"""
+    Factory to create a sensible MC step, which is to swap two particles.
+
+    Args:
+        generator (np.random.Generator): Random number generator to be used to sample a new MC step
+    """
 
     @wraps(two_particle_swap_factory)
     def wrapper(state_matrix: np.typing.NDArray) -> np.typing.NDArray[np.floating]:
@@ -31,12 +48,48 @@ def two_particle_swap_factory(generator: np.random.Generator) -> MCStep:
 
 
 EnergyModifier: TypeAlias = Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]
+r"""
+Type alias defining what an energy modifier should look like. In general, a modifier should look like a function that 
+takes in two state matrices $\mathbf{X}$ and $\mathbf{X}'$ and returns the term to be added to the energy difference 
+$\Delta E$. For example, if you want to simulate a grand canonical ensemble, the Metropolis acceptance criterion is:
+
+$$ \exp\left(-\beta\left(\Delta E - \sum_\alpha \mu_\alpha \Delta N_\alpha\right)\right) = \exp\left(-\beta\left(\Delta E - \boldsymbol{\mu}\cdot\Delta\mathbf{N}\right)\right) > u $$
+
+for a random number $u$ from $\text{Uniform}(0, 1)$. You can implement this strategy by defining an energy modifier:
+
+```py
+from typing import Callable
+from functools import wraps
+
+import numpy as np
+
+def energy_modifier_factory(
+    chemical_potentials: np.typing.NDArray[np.floating]
+) -> Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]:
+
+    @wraps(energy_modifier_factory)
+    def wrapper(
+        state_matrix: np.typing.NDArray[np.floating],
+        new_state_matrix: np.typing.NDArray[np.floating]
+    ) -> float:
+        change_in_num_types = new_state_matrix.sum(axis=0) - state_matrix.sum(axis=0)
+        return -chemical_potentials @ change_in_num_types
+
+    return wrapper
+```
+
+You can see a concrete example of the above energy modifier [here](https://github.com/MUEXLY/tce-lib#training-monte-carlo).
+"""
 
 
 def null_energy_modifier(
     state_matrix: np.typing.NDArray[np.floating],
     new_state_matrix: np.typing.NDArray[np.floating]
 ) -> float:
+
+    r"""
+    Default energy modifier, which does nothing to the total energy
+    """
 
     return 0.0
 
@@ -60,8 +113,8 @@ def monte_carlo(
         initial_configuration (Atoms):
             initial atomic configuration to perform MC on
         cluster_expansion (ClusterExpansion):
-            Container defining training data. See `tce.training.CEModel` for more info. This will usually
-            be created by `tce.training.TrainingMethod.fit`.
+            Container defining training data. See `tce.training.ClusterExpansion` for more info. This will usually
+            be created by `tce.training.train`.
         num_steps (int):
             Number of Monte Carlo steps to perform
         beta (float):
@@ -74,7 +127,7 @@ def monte_carlo(
         generator (Optional[np.random.Generator]):
             Generator instance drawing random numbers. If not specified, set to `np.random.default_rng(seed=0)`
         mc_step (Optional[MCStep]):
-            Monte Carlo simulation step. If not specified, set to an instance of `TwoParticleSwap`
+            Monte Carlo simulation step. If not specified, assumes that the user wants to swap 2 particles per step.
         energy_modifier (Optional[Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]]):
             Energy modifier when performing MC run. Each acceptance rule looks very similar for different ensembles,
             i.e. if $\exp(-\beta \Delta H) > u$, where $u$ is a random number drawn from $[0, 1]$, then accept the swap.

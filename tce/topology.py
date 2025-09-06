@@ -1,3 +1,8 @@
+r"""
+This module tells `tce-lib` how to compute topological tensors and their corresponding features, including how to
+compute local feature differences for efficient Monte Carlo runs.
+"""
+
 from itertools import permutations
 from typing import Optional, Union, TypeAlias, Callable
 from functools import wraps
@@ -237,11 +242,25 @@ def get_feature_vector_difference(
 
 
 FeatureComputer: TypeAlias = Callable[[Atoms], np.typing.NDArray[np.floating]]
+r"""
+Type alias defining a feature computer, which is in general a function that takes in an `ase.Atoms` object and returns a
+feature vector. 
+"""
 
 def topological_feature_vector_factory(
     basis: ClusterBasis,
     type_map: np.typing.NDArray[np.str_]
 ) -> FeatureComputer:
+
+    r"""
+    Factory method for creating a topological feature vector computer.
+
+    Args:
+        basis (ClusterBasis):
+            cluster basis for the topological feature vector computer
+        type_map (np.typing.NDArray[np.str_]):
+            chemical type map that defines how chemical species are ordered
+    """
 
     num_types = len(type_map)
     inverse_type_map = {v: k for k, v in enumerate(type_map)}

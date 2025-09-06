@@ -1,3 +1,9 @@
+r"""
+This module defines some useful constants, notably lattice structures (and their corresponding cutoffs, atomic bases,
+etc). These constants define how to compute feature vectors for a solid, since topology is a function of lattice
+structure.
+"""
+
 from enum import Enum, auto
 from typing import Dict
 from itertools import product, permutations
@@ -72,8 +78,8 @@ r"""Mapping from lattice structure to neighbor cutoffs, in units of the lattice 
 
 
 def load_three_body_labels(
-        tolerance: float = 0.01,
-        min_num_sites: int = 125,
+    tolerance: float = 0.01,
+    min_num_sites: int = 125,
 ) -> Dict[LatticeStructure, np.typing.NDArray[np.integer]]:
 
     r"""
@@ -148,6 +154,10 @@ r"""Mapping from lattice structure to set of three body labels"""
 
 @dataclass
 class ClusterBasis:
+
+    r"""
+    Cluster basis class which defines lattice structure and however many neighbors and triplets to include
+    """
 
     lattice_structure: LatticeStructure
     r"""lattice structure that the trained model corresponds to"""

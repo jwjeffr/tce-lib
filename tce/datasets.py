@@ -1,3 +1,8 @@
+r"""
+This module is a convenience wrapper for loading predefined toy datasets that come with an installation of `tce-lib`.
+These are useful for largely for educational reasons, i.e., seeing how `tce-lib` expects training data to look.
+"""
+
 from dataclasses import dataclass, fields
 from pathlib import Path
 import json
@@ -9,10 +14,36 @@ from tce.constants import LatticeStructure
 
 
 DATASET_DIR = files("tce") / "datasets"
+"""@private"""
 
 
 @dataclass
 class Dataset:
+
+    r"""
+    Dataset class that can load a pre-defined dataset. To see available datasets:
+
+    ```py
+    from tce.datasets import Dataset, available_datasets
+
+    for dataset_name in available_datasets:
+        print(dataset)
+    ```
+
+    To load a given dataset:
+
+    ```py
+    from pathlib import Path
+
+    from tce.datasets import Dataset, available_datasets
+
+    for dataset_name in available_datasets:
+        dataset = Dataset.load(Path(dataset_name))
+    ```
+    
+    See [here](https://github.com/MUEXLY/tce-lib#loading-and-visualizing-datasets) for a more concrete example
+    showing what you can do with the `tce.datasets.Dataset` object!
+    """
 
     lattice_parameter: float
     lattice_structure: LatticeStructure

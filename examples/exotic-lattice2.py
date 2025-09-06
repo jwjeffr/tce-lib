@@ -44,7 +44,7 @@ def main():
             max_adjacency_order=3,
             max_triplet_order=1
         ),
-        type_map=np.append(cations, ["O"]),
+        type_map=np.append(cations, "O"),
     )
     feature_vector = feature_vector_computer(atoms)
     print(feature_vector)

@@ -110,7 +110,7 @@ basic (which is a good thing for you!).
 The first script is training a CuNi model using an EAM potential from Fischer et al.
 (paper [here](https://doi.org/10.1016/j.actamat.2019.06.027)). In this script, we generate a bunch of random CuNi
 solid solutions, attach an `ase.calculators.eam.EAM` calculator to each configuration, compute their energies, and
-then train using the `tce.training.TrainingMethod.fit` method, which returns a `tce.training.CEModel` instance. The
+then train using the `tce.training.train` method, which returns a `tce.training.ClusterExpansion` instance. The
 container is then saved to be used for later.
 
 **IMPORTANT**: These are unrelaxed energies! A real production environment should optimize the structure - see the
@@ -330,7 +330,7 @@ then make the property intensive later, as done in
 
 """
 
-__version__ = "0.2.10"
+__version__ = "0.2.11"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
