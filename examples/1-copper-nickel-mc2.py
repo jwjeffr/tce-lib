@@ -6,6 +6,7 @@ from functools import wraps
 
 import numpy as np
 import matplotlib.pyplot as plt
+from ase import build
 
 from tce.structures import Supercell
 from tce.training import ClusterExpansion
@@ -71,12 +72,18 @@ def main():
     chemical_potentials_cu = np.linspace(-0.5, 1.5, 25)
     atomic_fractions_cu = np.zeros_like(chemical_potentials_cu)
 
+    pure_ni = build.bulk(
+        cluster_expansion.type_map[1],
+        a=cluster_expansion.cluster_basis.lattice_parameter,
+        crystalstructure=cluster_expansion.cluster_basis.lattice_structure.name.lower(),
+        cubic=True
+    ).repeat((10, 10, 10))
+
     for i, chemical_potential_cu in enumerate(chemical_potentials_cu):
 
         trajectory = monte_carlo(
-            supercell=supercell,
+            initial_configuration=pure_ni,
             cluster_expansion=cluster_expansion,
-            initial_types=np.ones(supercell.num_sites, dtype=int),
             num_steps=10_000,
             beta=19.341,
             save_every=1_000,

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from ase import build, Atoms
 from ase.calculators.eam import EAM
 import numpy as np

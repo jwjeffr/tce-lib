@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import logging
 
 import numpy as np
-from ase import Atoms, build
+from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
 
 from tce.structures import Supercell
@@ -63,9 +63,8 @@ class TwoParticleSwap(MCStep):
 
 
 def monte_carlo(
-    supercell: Supercell,
+    initial_configuration: Atoms,
     cluster_expansion: ClusterExpansion,
-    initial_types: np.typing.NDArray[np.integer],
     num_steps: int,
     beta: float,
     save_every: int = 1,
@@ -79,24 +78,11 @@ def monte_carlo(
     Monte Carlo simulation from on a lattice defined by a Supercell
 
     Args:
-        supercell (Supercell):
-            Supercell instance defining lattice
+        initial_configuration (Atoms):
+            initial atomic configuration to perform MC on
         cluster_expansion (ClusterExpansion):
             Container defining training data. See `tce.training.CEModel` for more info. This will usually
             be created by `tce.training.TrainingMethod.fit`.
-        initial_types (np.typing.NDArray[int]):
-            Initial types occupying lattice sites. This should be a 1D array of integers. For example, for a 4-site
-            solid with type map defined by:
-            ```py
-            type_map: dict[int, str] = {0: "Fe", 1: "Cr"}
-            ```
-            initial types can be defined as:
-            ```py
-            import numpy as np
-
-            initial_types: np.typing.NDArray[np.integer] = np.array([1, 0, 0, 1])
-            ```
-            which defines the first site having a Cr atom, the second site having a Fe atom, etc.
         num_steps (int):
             Number of Monte Carlo steps to perform
         beta (float):
@@ -126,15 +112,6 @@ def monte_carlo(
 
     """
 
-    if supercell.lattice_parameter != cluster_expansion.cluster_basis.lattice_parameter:
-        raise ValueError(
-            f"{supercell.lattice_parameter=} and {cluster_expansion.cluster_basis.lattice_parameter=} need to match!"
-        )
-    if supercell.lattice_structure != cluster_expansion.cluster_basis.lattice_structure:
-        raise ValueError(
-            f"{supercell.lattice_structure=} and {cluster_expansion.cluster_basis.lattice_structure=} need to match!"
-        )
-
     if not generator:
         generator = np.random.default_rng(seed=0)
     if not mc_step:
@@ -145,13 +122,21 @@ def monte_carlo(
 
     num_types = len(cluster_expansion.type_map)
 
-    ase_supercell = build.bulk(
-        cluster_expansion.type_map[0],
-        crystalstructure=supercell.lattice_structure.name.lower(),
-        a=supercell.lattice_parameter,
-        cubic=True,
-    ).repeat(supercell.size)
-    ase_supercell.symbols = cluster_expansion.type_map[initial_types]
+    lattice_structure = cluster_expansion.cluster_basis.lattice_structure
+    lattice_parameter = cluster_expansion.cluster_basis.lattice_parameter
+
+    lengths = initial_configuration.get_cell().lengths()
+
+    supercell = Supercell(
+        lattice_structure=lattice_structure,
+        lattice_parameter=lattice_parameter,
+        size=tuple((lengths // lattice_parameter).astype(int))
+    )
+
+    inverse_type_map = {v: k for k, v in enumerate(cluster_expansion.type_map)}
+    initial_types = np.fromiter((
+        inverse_type_map[symbol] for symbol in initial_configuration.get_chemical_symbols()
+    ), dtype=int)
 
     state_matrix = np.zeros((supercell.num_sites, num_types), dtype=int)
     state_matrix[np.arange(supercell.num_sites), initial_types] = 1
@@ -170,7 +155,7 @@ def monte_carlo(
 
         if not step % save_every:
             _, types = np.where(state_matrix)
-            atoms = ase_supercell.copy()
+            atoms = initial_configuration.copy()
             atoms.set_chemical_symbols(symbols=cluster_expansion.type_map[types])
             atoms.calc = SinglePointCalculator(atoms=atoms, energy=energy)
             trajectory.append(atoms)

@@ -3,7 +3,7 @@ import logging
 import sys
 
 import numpy as np
-from ase import io
+from ase import io, build
 
 from tce.structures import Supercell
 from tce.training import ClusterExpansion
@@ -16,16 +16,17 @@ def main():
 
     cluster_expansion = ClusterExpansion.load(Path("CuNi.pkl"))
 
-    supercell = Supercell(
-        lattice_structure=cluster_expansion.cluster_basis.lattice_structure,
-        lattice_parameter=cluster_expansion.cluster_basis.lattice_parameter,
-        size=(10, 10, 10)
-    )
+    atoms = build.bulk(
+        cluster_expansion.type_map[0],
+        a=cluster_expansion.cluster_basis.lattice_parameter,
+        crystalstructure=cluster_expansion.cluster_basis.lattice_structure.name.lower(),
+        cubic=True
+    ).repeat((10, 10, 10))
+    atoms.symbols = rng.choice(cluster_expansion.type_map, size=len(atoms))
 
     trajectory = monte_carlo(
-        supercell=supercell,
+        initial_configuration=atoms,
         cluster_expansion=cluster_expansion,
-        initial_types=rng.integers(len(cluster_expansion.type_map), size=supercell.num_sites),
         num_steps=10_000,
         beta=19.341,
         save_every=100
