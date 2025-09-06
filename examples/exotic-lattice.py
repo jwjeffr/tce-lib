@@ -1,5 +1,6 @@
 from aenum import extend_enum
 import numpy as np
+from ase import build, io
 
 import tce
 
@@ -30,32 +31,43 @@ def main():
     # then, reload the three body labels
     tce.constants.STRUCTURE_TO_THREE_BODY_LABELS = tce.constants.load_three_body_labels()
 
-    # construct the supercell
-    supercell = tce.structures.Supercell(
-        lattice_structure=tce.constants.LatticeStructure.DIAMOND,
-        lattice_parameter=3.5,
-        size=(3, 3, 3)
+    species = np.array(["Si", "Ge"])
+    lattice_parameter = 5.5
+
+    feature_vector_computer = tce.topology.topological_feature_vector_factory(
+        basis=tce.constants.ClusterBasis(
+            tce.constants.LatticeStructure.DIAMOND,
+            lattice_parameter=lattice_parameter,
+            max_adjacency_order=2,
+            max_triplet_order=1
+        ),
+        type_map=species
     )
 
-    # construct a random state matrix, 30% A and 70% B
     rng = np.random.default_rng(seed=0)
-    types = rng.choice([0, 1], p=[0.3, 0.7], size=supercell.num_sites)
-    state_matrix = np.zeros((supercell.num_sites, 2))
-    for site, t in enumerate(types):
-        state_matrix[site, t] = 1.0
+    atoms = build.bulk(
+        species[0],
+        crystalstructure="diamond",
+        a=lattice_parameter,
+        cubic=True
+    ).repeat((3, 3, 3))
+    atoms.symbols = rng.choice(species, p=[0.3, 0.7], size=len(atoms))
+    io.write("test.xyz", atoms)
 
-    # compute the feature vector for that state matrix
-    feature_vector = supercell.feature_vector(
-        state_matrix,
-        max_adjacency_order=3,
-        max_triplet_order=2
-    )
+    feature_vector = feature_vector_computer(atoms)
     print(feature_vector)
 
-    # can also check adjacency tensors for number of n'th nearest neighbors
-    expected_num_neighbors = (4, 12, 12)
-    for adj, n in zip(supercell.adjacency_tensors(max_order=3), expected_num_neighbors):
-        assert adj.sum(axis=0).mean() == n
+    # check the number of nearest neighbors
+    # for cubic diamond, we should see 4th 1st nearest, 12 2nd nearest, 12 3rd nearest, and 6th 4th nearest
+    # we should also see that there's no dispersity in the nearest neighbor counts
+    distances = atoms.get_all_distances(mic=True)
+    cutoffs = lattice_parameter * tce.constants.STRUCTURE_TO_CUTOFF_LISTS[tce.constants.LatticeStructure.DIAMOND]
+    tol = 1.0e-3
+    for i, cutoff in enumerate(cutoffs):
+        num_neighbors = np.logical_and(
+            (1.0 - tol) * cutoff < distances, distances < (1.0 + tol) * cutoff
+        ).sum(axis=0)
+        print(num_neighbors.mean(), num_neighbors.std())
 
 
 if __name__ == "__main__":

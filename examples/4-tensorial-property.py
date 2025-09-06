@@ -2,8 +2,8 @@ from ase import build, Atoms
 from ase.calculators.eam import EAM
 import numpy as np
 
-from tce.constants import LatticeStructure
-from tce.training import ClusterBasis, train
+from tce.constants import LatticeStructure, ClusterBasis
+from tce.training import train
 from tce.structures import Supercell
 
 
@@ -67,7 +67,7 @@ def main():
         max_adjacency_order=3,
         max_triplet_order=2
     )
-    print(cluster_expansion.model.predict(feature_vector)/ supercell.num_sites)
+    print(cluster_expansion.model.predict(feature_vector) / supercell.num_sites)
 
 
 if __name__ == "__main__":

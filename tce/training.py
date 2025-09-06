@@ -4,14 +4,12 @@ from typing import Callable, TypeAlias, Union, Optional, Protocol, runtime_check
 import warnings
 from pathlib import Path
 import pickle
-from functools import wraps
 
 import numpy as np
-from scipy.spatial import KDTree
 from ase import Atoms
 
-from tce.constants import LatticeStructure, STRUCTURE_TO_CUTOFF_LISTS, STRUCTURE_TO_ATOMIC_BASIS
-from tce.topology import get_adjacency_tensors, get_three_body_tensors, get_feature_vector
+from tce.constants import ClusterBasis, STRUCTURE_TO_ATOMIC_BASIS
+from tce.topology import FeatureComputer, topological_feature_vector_factory
 
 
 NON_CUBIC_CELL_MESSAGE = "At least one of your configurations has a non-cubic cell. For now, tce-lib does not support non-cubic lattices."
@@ -22,22 +20,6 @@ NO_POTENTIAL_ENERGY_MESSAGE = "At least one of your configurations does not have
 
 LARGE_SYSTEM_THRESHOLD = 1_000
 LARGE_SYSTEM_MESSAGE = f"You have passed a relatively large system (larger than {LARGE_SYSTEM_THRESHOLD:.0f}) as a training point. This will be very slow."
-
-
-@dataclass
-class ClusterBasis:
-
-    lattice_structure: LatticeStructure
-    r"""lattice structure that the trained model corresponds to"""
-
-    lattice_parameter: float
-    r"""lattice parameter that the trained model corresponds to"""
-
-    max_adjacency_order: int
-    r"""maximum adjacency order (number of nearest neighbors) that the trained model accounts for"""
-
-    max_triplet_order: int
-    r"""maximum triplet order (number of three-body clusters) that the trained model accounts for"""
 
 
 def get_type_map(configurations: list[Atoms]) -> np.typing.NDArray[np.str_]:
@@ -55,43 +37,6 @@ def total_energy(atoms: Atoms) -> float:
         return atoms.get_potential_energy()
     except RuntimeError as e:
         raise ValueError(NO_POTENTIAL_ENERGY_MESSAGE) from e
-
-
-FeatureComputer: TypeAlias = Callable[[Atoms], np.typing.NDArray[np.floating]]
-
-def topological_feature_vector_factory(
-    basis: ClusterBasis,
-    type_map: np.typing.NDArray[np.str_]
-) -> FeatureComputer:
-
-    num_types = len(type_map)
-    inverse_type_map = {v: k for k, v in enumerate(type_map)}
-
-    @wraps(topological_feature_vector_factory)
-    def wrapper(atoms: Atoms):
-        tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
-        adjacency_tensors = get_adjacency_tensors(
-            tree=tree,
-            cutoffs=basis.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[basis.lattice_structure][
-                                              :basis.max_adjacency_order],
-        )
-        three_body_tensors = get_three_body_tensors(
-            lattice_structure=basis.lattice_structure,
-            adjacency_tensors=adjacency_tensors,
-            max_three_body_order=basis.max_triplet_order,
-        )
-
-        state_matrix = np.zeros((len(atoms), num_types))
-        for site, symbol in enumerate(atoms.symbols):
-            state_matrix[site, inverse_type_map[symbol]] = 1.0
-
-        return get_feature_vector(
-            adjacency_tensors=adjacency_tensors,
-            three_body_tensors=three_body_tensors,
-            state_matrix=state_matrix
-        )
-
-    return wrapper
 
 
 def get_data_pairs(

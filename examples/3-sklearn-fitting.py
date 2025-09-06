@@ -7,8 +7,8 @@ from sklearn.linear_model import Lasso
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
-from tce.training import train, ClusterBasis
-from tce.constants import LatticeStructure
+from tce.training import train
+from tce.constants import LatticeStructure, ClusterBasis
 
 
 def main():

@@ -8,45 +8,35 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ase import build
 
-from tce.structures import Supercell
 from tce.training import ClusterExpansion
 from tce.monte_carlo import monte_carlo, MCStep
 
 
-class OneParticleSwap(MCStep):
+def one_particle_swap_factory(generator: np.random.Generator) -> MCStep:
 
-    r"""
-    MC move swapping one particle
-    """
-
-    def step(self, state_matrix: np.typing.NDArray) -> np.typing.NDArray:
-
-        r"""
-        Method defining a Monte Carlo two-particle swap. Choose two sites, and swap the atoms at those sites
-
-        Args:
-            state_matrix (np.typing.NDArray): state matrix $\mathbf{X}$
-        """
-
+    @wraps(one_particle_swap_factory)
+    def wrapper(state_matrix: np.typing.NDArray[np.floating]) -> np.typing.NDArray[np.floating]:
         num_sites, num_types = state_matrix.shape
-        i, = self.generator.integers(num_sites, size=1)
+        i, = generator.integers(num_sites, size=1)
         current_type = np.where(state_matrix[i, :] == 1)[0]
 
-        new_type = self.generator.integers(num_types, size=1)
+        new_type = generator.integers(num_types, size=1)
         while new_type == current_type:
-            new_type = self.generator.integers(num_types, size=1)
+            new_type = generator.integers(num_types, size=1)
 
         new_state_matrix = state_matrix.copy()
         new_state_matrix[i, :] = np.zeros(num_types)
         new_state_matrix[i, new_type] = 1.0
         return new_state_matrix
 
+    return wrapper
 
-def get_energy_modifier(
+
+def energy_modifier_factory(
     chemical_potentials: np.typing.NDArray[np.floating]
 ) -> Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]:
 
-    @wraps(get_energy_modifier)
+    @wraps(energy_modifier_factory)
     def wrapper(
         state_matrix: np.typing.NDArray[np.floating],
         new_state_matrix: np.typing.NDArray[np.floating]
@@ -62,12 +52,6 @@ def main():
     rng = np.random.default_rng(seed=0)
 
     cluster_expansion = ClusterExpansion.load(Path("CuNi.pkl"))
-
-    supercell = Supercell(
-        lattice_structure=cluster_expansion.cluster_basis.lattice_structure,
-        lattice_parameter=cluster_expansion.cluster_basis.lattice_parameter,
-        size=(10, 10, 10)
-    )
 
     chemical_potentials_cu = np.linspace(-0.5, 1.5, 25)
     atomic_fractions_cu = np.zeros_like(chemical_potentials_cu)
@@ -87,10 +71,10 @@ def main():
             num_steps=10_000,
             beta=19.341,
             save_every=1_000,
-            energy_modifier=get_energy_modifier(
+            energy_modifier=energy_modifier_factory(
                 chemical_potentials=np.array([chemical_potential_cu, 0.0])
             ),
-            mc_step=OneParticleSwap(generator=rng),
+            mc_step=one_particle_swap_factory(generator=rng),
             callback=lambda x, y: None
         )
         final_types = np.array(trajectory[-1].get_chemical_symbols())

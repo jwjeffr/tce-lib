@@ -28,6 +28,21 @@ We are also more than happy to include new lattice types as native options in `t
 [here](https://github.com/MUEXLY/tce-lib/issues), or a pull request [here](https://github.com/MUEXLY/tce-lib/pulls) if
 you are familiar with GitHub.
 
+If your unit cell is available via `ase`'s functionalities (below is using `ase.build.bulk`, but you can also load
+in a `.cif` file or something similar), you don't have to waste your time finding atomic bases and cutoffs every time.
+For example, for a [fluorite structure](https://en.wikipedia.org/wiki/Fluorite_structure) with U and Th cations:
+
+```py
+.. include:: ../examples/exotic-lattice2.py
+```
+
+You'll notice that a lot of the features are $0$. This is not uncommon for exotic lattice types, especially when not
+all lattice sites are equivalent. This is not a problem - we just likely need to feature reduce later using something
+like [PCA](https://en.wikipedia.org/wiki/Principal_component_analysis), which is relatively easy with an
+`sklearn.pipeline.Pipeline` object (docs are
+[here](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html)). This will be elaborated
+upon in an example more focused on training ([here](https://muexly.github.io/tce-lib/tce.html#custom-training-advanced)).
+
 ## 🔩 FeCr + EAM (basic)
 
 Below is a very basic example of computing a best-fit interaction vector from LAMMPS data. We use LAMMPS and an EAM
@@ -37,6 +52,10 @@ best-fit interaction vector from a sequence of random samples, and cross-validat
 ```py
 .. include:: ../examples/iron-chrome-lammps.py
 ```
+
+Above, we avoided a lot of convenience functions, like constructing a feature vector calculator from a feature vector
+computer factory in the prior examples. You can very easily still use these factories, but the above example shows that
+you should not feel obligated to use them for more advanced use cases.
 
 This generates the plot below:
 
@@ -156,7 +175,20 @@ computing phase diagrams:
 />](https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/examples/cu-ni-sgcmc.png)
 
 Note that the curve is continuous, which denotes no phase transitions at the temperature. This matches experimental
-phase diagrams - CuNi forms a solid solution along the whole composition range.
+phase diagrams - CuNi forms a solid solution along the whole composition range below the melting point.
+
+<div style="text-align: center;">
+  <a href="https://sv.rkriz.net/classes/MSE2094_NoteBook/96ClassProj/OLD/examples/cu_ni.jpg">
+    <img
+      src="https://sv.rkriz.net/classes/MSE2094_NoteBook/96ClassProj/OLD/examples/cu_ni.jpg"
+      width="50%"
+      alt="CuNi phase diagram"
+      title="CuNi"
+    />
+  </a>
+</div>
+
+Image credit: Ron Kriz, MSE 2094 @ Virginia Tech ([url](https://sv.rkriz.net/classes/MSE2094_NoteBook/96ClassProj/OLD/examples/cu-ni.html))
 
 ## 💻 Custom Training (Advanced)
 

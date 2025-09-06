@@ -1,7 +1,6 @@
-from typing import Optional, Callable
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from typing import Optional, Callable, TypeAlias
 import logging
+from functools import wraps
 
 import numpy as np
 from ase import Atoms
@@ -15,51 +14,31 @@ LOGGER = logging.getLogger(__name__)
 rf"""logger for submodule {__name__}"""
 
 
-@dataclass
-class MCStep(ABC):
-
-    r"""
-    abstract base class defining a monte carlo step
-
-    Args:
-        generator (np.random.Generator): Generator instance drawing random numbers
-    """
-
-    generator: np.random.Generator
-
-    @abstractmethod
-    def step(self, state_matrix: np.typing.NDArray) -> np.typing.NDArray:
-
-        r"""
-        Method defining a Monte Carlo step. Should take in a state matrix $\mathbf{X}$, and return a new state matrix
-        $\mathbf{X}'$.
-
-        Args:
-            state_matrix (np.typing.NDArray): state matrix $\mathbf{X}$
-        """
-
-        pass
+MCStep: TypeAlias = Callable[[np.typing.NDArray[np.floating]], np.typing.NDArray[np.floating]]
 
 
-class TwoParticleSwap(MCStep):
+def two_particle_swap_factory(generator: np.random.Generator) -> MCStep:
 
-    r"""
-    MC move swapping two particles
-    """
-
-    def step(self, state_matrix: np.typing.NDArray) -> np.typing.NDArray:
-
-        r"""
-        Method defining a Monte Carlo two-particle swap. Choose two sites, and swap the atoms at those sites
-
-        Args:
-            state_matrix (np.typing.NDArray): state matrix $\mathbf{X}$
-        """
+    @wraps(two_particle_swap_factory)
+    def wrapper(state_matrix: np.typing.NDArray) -> np.typing.NDArray[np.floating]:
 
         new_state_matrix = state_matrix.copy()
-        i, j = self.generator.integers(len(state_matrix), size=2)
+        i, j = generator.integers(len(state_matrix), size=2)
         new_state_matrix[i], new_state_matrix[j] = state_matrix[j], state_matrix[i]
         return new_state_matrix
+
+    return wrapper
+
+
+EnergyModifier: TypeAlias = Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]
+
+
+def null_energy_modifier(
+    state_matrix: np.typing.NDArray[np.floating],
+    new_state_matrix: np.typing.NDArray[np.floating]
+) -> float:
+
+    return 0.0
 
 
 def monte_carlo(
@@ -70,7 +49,7 @@ def monte_carlo(
     save_every: int = 1,
     generator: Optional[np.random.Generator] = None,
     mc_step: Optional[MCStep] = None,
-    energy_modifier: Optional[Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]] = None,
+    energy_modifier: Optional[EnergyModifier] = None,
     callback: Optional[Callable[[int, int], None]] = None
 ) -> list[Atoms]:
 
@@ -115,7 +94,9 @@ def monte_carlo(
     if not generator:
         generator = np.random.default_rng(seed=0)
     if not mc_step:
-        mc_step = TwoParticleSwap(generator=generator)
+        mc_step = two_particle_swap_factory(generator=generator)
+    if not energy_modifier:
+        energy_modifier = null_energy_modifier
     if not callback:
         def callback(step_: int, num_steps_: int):
             LOGGER.info(f"MC step {step_:.0f}/{num_steps_:.0f}")
@@ -161,16 +142,19 @@ def monte_carlo(
             trajectory.append(atoms)
             LOGGER.info(f"saved configuration at step {step:.0f}/{num_steps:.0f}")
 
-        new_state_matrix = mc_step.step(state_matrix)
+        new_state_matrix = mc_step(state_matrix)
         feature_diff = supercell.clever_feature_diff(
             state_matrix, new_state_matrix,
             max_adjacency_order=cluster_expansion.cluster_basis.max_adjacency_order,
             max_triplet_order=cluster_expansion.cluster_basis.max_triplet_order
         )
         energy_diff = cluster_expansion.model.predict(feature_diff)
-        modified_energy = energy_diff
-        if energy_modifier:
-            modified_energy += energy_modifier(state_matrix, new_state_matrix)
+        if not isinstance(energy_diff, float):
+            raise ValueError(
+                "cluster_expansion.model.predict did not return a float. "
+                "Are you sure this model was trained on energies?"
+            )
+        modified_energy = energy_diff + energy_modifier(state_matrix, new_state_matrix)
         if np.exp(-beta * modified_energy) > 1.0 - generator.random():
             LOGGER.debug(f"move accepted with energy difference {energy_diff:.3f}")
             state_matrix = new_state_matrix

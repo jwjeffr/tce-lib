@@ -5,7 +5,6 @@ import sys
 import numpy as np
 from ase import io, build
 
-from tce.structures import Supercell
 from tce.training import ClusterExpansion
 from tce.monte_carlo import monte_carlo
 

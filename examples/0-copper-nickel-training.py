@@ -5,8 +5,8 @@ from ase.calculators.eam import EAM
 import numpy as np
 import requests
 
-from tce.constants import LatticeStructure
-from tce.training import ClusterBasis, train
+from tce.constants import LatticeStructure, ClusterBasis
+from tce.training import train
 
 
 def main():
