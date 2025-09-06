@@ -196,7 +196,7 @@ Below is an example of using a custom training method to train the CE model. The
 this. The example below is a very typical one - using [lasso](https://en.wikipedia.org/wiki/Lasso_(statistics)). This
 regularization technique minimizes the loss:
 
-$$ L(\beta\; |\;\lambda) = \|X\beta - y\|_2^2 + \lambda \|\beta\|_1^2 $$
+$$ L(\beta\; |\;\lambda) = \|X\beta - y\|_2^2 + \lambda \|\beta\|_1 $$
 
 which better-supports sparse best-fit parameters $\hat{\beta}$, which may be useful if you only want to exclude
 non-important clusters. We'll use `scikit-learn`'s interface for providing a model. You can really use any linear
@@ -330,7 +330,7 @@ then make the property intensive later, as done in
 
 """
 
-__version__ = "0.2.9"
+__version__ = "0.2.10"
 __authors__ = ["Jacob Jeffries"]
 
 __url__ = "https://github.com/MUEXLY/tce-lib"
