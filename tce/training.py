@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from abc import abstractmethod
-from typing import Callable, TypeAlias, Union, Optional, Protocol, runtime_checkable, Self
+from typing import Callable, TypeAlias, Union, Optional, Protocol, runtime_checkable
 import warnings
 from pathlib import Path
 import pickle
@@ -78,7 +78,7 @@ def get_data_pairs(
 class Model(Protocol):
 
     @abstractmethod
-    def fit(self, X: np.typing.NDArray[np.floating], y: np.typing.NDArray[np.floating]) -> Self:
+    def fit(self, X: np.typing.NDArray[np.floating], y: np.typing.NDArray[np.floating]) -> "Model":
 
         pass
 
@@ -90,7 +90,7 @@ class Model(Protocol):
 
 class LimitingRidge:
 
-    def fit(self, X: np.typing.NDArray[np.floating], y: np.typing.NDArray[np.floating]) -> Self:
+    def fit(self, X: np.typing.NDArray[np.floating], y: np.typing.NDArray[np.floating]) -> "Model":
 
         self.coef_ = np.linalg.pinv(X) @ y
         return self
@@ -141,9 +141,6 @@ def train(
     target_property_computer: Optional[PropertyComputer] = None,
     feature_computer: Optional[FeatureComputer] = None,
 ) -> ClusterExpansion:
-
-    """if not model:
-        model: Model = LimitingRidge()"""
 
     if not target_property_computer:
         target_property_computer = total_energy
