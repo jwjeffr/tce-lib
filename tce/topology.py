@@ -1,12 +1,20 @@
 from itertools import permutations
-from typing import Optional, Union
+from typing import Optional, Union, TypeAlias, Callable
+from functools import wraps
 
 from scipy.spatial import KDTree
 import numpy as np
 import sparse
 from opt_einsum import contract
+from ase import Atoms
 
-from .constants import LatticeStructure, STRUCTURE_TO_THREE_BODY_LABELS, load_three_body_labels
+from .constants import (
+    LatticeStructure,
+    STRUCTURE_TO_THREE_BODY_LABELS,
+    load_three_body_labels,
+    ClusterBasis,
+    STRUCTURE_TO_CUTOFF_LISTS
+)
 
 
 def symmetrize(tensor: sparse.COO, axes: Optional[tuple[int, ...]] =None) -> sparse.COO:
@@ -17,7 +25,7 @@ def symmetrize(tensor: sparse.COO, axes: Optional[tuple[int, ...]] =None) -> spa
 
     Where $S_n$ is the symmetric group on $n$ elements, so we are summing over the permutations of the indices.
 
-    E.g. $T_{(12)} = \frac{T_{12} + T_{21}}{2}$, or equivalently $\text{symmetrize}(T) = \frac{T + T^\intercal}{2}$
+    E.g., $T_{(12)} = \frac{T_{12} + T_{21}}{2}$, or equivalently $\text{symmetrize}(T) = \frac{T + T^\intercal}{2}$
 
     Specify the `axes` argument if you only want to symmetrize over a subset of indices
 
@@ -44,8 +52,8 @@ def get_adjacency_tensors(
 
     r"""
     compute adjacency tensors $A_{ij}^{(n)}$. we first compute the sparse distance matrix using the
-    `scipy.spatial.KDTree` data structure, and then convert to a `sparse.COO` tensor. then, we stack according to
-    neighbor order, i.e. $A_{ij}^{(n)} = 1$ if sites $i$ and $j$ are $n$'th order neighbors, and $0$ else.
+    `scipy.spatial.KDTree` data structure, and then convert to a `sparse.COO` tensor. then we stack the tensors
+    according to neighbor order, i.e., $A_{ij}^{(n)} = 1$ if sites $i$ and $j$ are $n$'th order neighbors, and $0$ else.
 
     Args:
         tree (scipy.spatial.KDTree):
@@ -226,3 +234,40 @@ def get_feature_vector_difference(
         ]
     )
     return final_feature_vec_truncated - initial_feature_vec_truncated
+
+
+FeatureComputer: TypeAlias = Callable[[Atoms], np.typing.NDArray[np.floating]]
+
+def topological_feature_vector_factory(
+    basis: ClusterBasis,
+    type_map: np.typing.NDArray[np.str_]
+) -> FeatureComputer:
+
+    num_types = len(type_map)
+    inverse_type_map = {v: k for k, v in enumerate(type_map)}
+
+    @wraps(topological_feature_vector_factory)
+    def wrapper(atoms: Atoms):
+        tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
+        adjacency_tensors = get_adjacency_tensors(
+            tree=tree,
+            cutoffs=basis.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[basis.lattice_structure][
+                                              :basis.max_adjacency_order],
+        )
+        three_body_tensors = get_three_body_tensors(
+            lattice_structure=basis.lattice_structure,
+            adjacency_tensors=adjacency_tensors,
+            max_three_body_order=basis.max_triplet_order,
+        )
+
+        state_matrix = np.zeros((len(atoms), num_types))
+        for site, symbol in enumerate(atoms.symbols):
+            state_matrix[site, inverse_type_map[symbol]] = 1.0
+
+        return get_feature_vector(
+            adjacency_tensors=adjacency_tensors,
+            three_body_tensors=three_body_tensors,
+            state_matrix=state_matrix
+        )
+
+    return wrapper

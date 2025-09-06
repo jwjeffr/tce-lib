@@ -1,77 +1,55 @@
-from typing import Optional, Callable
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from typing import Optional, Callable, TypeAlias
 import logging
+from functools import wraps
 
 import numpy as np
-from ase import Atoms, build
+from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
 
 from tce.structures import Supercell
-from tce.training import CEModel
+from tce.training import ClusterExpansion
 
 
 LOGGER = logging.getLogger(__name__)
 rf"""logger for submodule {__name__}"""
 
 
-@dataclass
-class MCStep(ABC):
-
-    r"""
-    abstract base class defining a monte carlo step
-
-    Args:
-        generator (np.random.Generator): Generator instance drawing random numbers
-    """
-
-    generator: np.random.Generator
-
-    @abstractmethod
-    def step(self, state_matrix: np.typing.NDArray) -> np.typing.NDArray:
-
-        r"""
-        Method defining a Monte Carlo step. Should take in a state matrix $\mathbf{X}$, and return a new state matrix
-        $\mathbf{X}'$.
-
-        Args:
-            state_matrix (np.typing.NDArray): state matrix $\mathbf{X}$
-        """
-
-        pass
+MCStep: TypeAlias = Callable[[np.typing.NDArray[np.floating]], np.typing.NDArray[np.floating]]
 
 
-class TwoParticleSwap(MCStep):
+def two_particle_swap_factory(generator: np.random.Generator) -> MCStep:
 
-    r"""
-    MC move swapping two particles
-    """
-
-    def step(self, state_matrix: np.typing.NDArray) -> np.typing.NDArray:
-
-        r"""
-        Method defining a Monte Carlo two-particle swap. Choose two sites, and swap the atoms at those sites
-
-        Args:
-            state_matrix (np.typing.NDArray): state matrix $\mathbf{X}$
-        """
+    @wraps(two_particle_swap_factory)
+    def wrapper(state_matrix: np.typing.NDArray) -> np.typing.NDArray[np.floating]:
 
         new_state_matrix = state_matrix.copy()
-        i, j = self.generator.integers(len(state_matrix), size=2)
+        i, j = generator.integers(len(state_matrix), size=2)
         new_state_matrix[i], new_state_matrix[j] = state_matrix[j], state_matrix[i]
         return new_state_matrix
 
+    return wrapper
+
+
+EnergyModifier: TypeAlias = Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]
+
+
+def null_energy_modifier(
+    state_matrix: np.typing.NDArray[np.floating],
+    new_state_matrix: np.typing.NDArray[np.floating]
+) -> float:
+
+    return 0.0
+
 
 def monte_carlo(
-    supercell: Supercell,
-    model: CEModel,
-    initial_types: np.typing.NDArray[np.integer],
+    initial_configuration: Atoms,
+    cluster_expansion: ClusterExpansion,
     num_steps: int,
     beta: float,
     save_every: int = 1,
     generator: Optional[np.random.Generator] = None,
     mc_step: Optional[MCStep] = None,
-    energy_modifier: Optional[Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]] = None,
+    energy_modifier: Optional[EnergyModifier] = None,
     callback: Optional[Callable[[int, int], None]] = None
 ) -> list[Atoms]:
 
@@ -79,24 +57,11 @@ def monte_carlo(
     Monte Carlo simulation from on a lattice defined by a Supercell
 
     Args:
-        supercell (Supercell):
-            Supercell instance defining lattice
-        model (CEModel):
+        initial_configuration (Atoms):
+            initial atomic configuration to perform MC on
+        cluster_expansion (ClusterExpansion):
             Container defining training data. See `tce.training.CEModel` for more info. This will usually
             be created by `tce.training.TrainingMethod.fit`.
-        initial_types (np.typing.NDArray[int]):
-            Initial types occupying lattice sites. This should be a 1D array of integers. For example, for a 4-site
-            solid with type map defined by:
-            ```py
-            type_map: dict[int, str] = {0: "Fe", 1: "Cr"}
-            ```
-            initial types can be defined as:
-            ```py
-            import numpy as np
-
-            initial_types: np.typing.NDArray[np.integer] = np.array([1, 0, 0, 1])
-            ```
-            which defines the first site having a Cr atom, the second site having a Fe atom, etc.
         num_steps (int):
             Number of Monte Carlo steps to perform
         beta (float):
@@ -126,37 +91,44 @@ def monte_carlo(
 
     """
 
-    if supercell.lattice_parameter != model.cluster_basis.lattice_parameter:
-        raise ValueError(f"{supercell.lattice_parameter=} and {model.cluster_basis.lattice_parameter=} need to match!")
-    if supercell.lattice_structure != model.cluster_basis.lattice_structure:
-        raise ValueError(f"{supercell.lattice_structure=} and {model.cluster_basis.lattice_structure=} need to match!")
-
     if not generator:
         generator = np.random.default_rng(seed=0)
     if not mc_step:
-        mc_step = TwoParticleSwap(generator=generator)
+        mc_step = two_particle_swap_factory(generator=generator)
+    if not energy_modifier:
+        energy_modifier = null_energy_modifier
     if not callback:
         def callback(step_: int, num_steps_: int):
             LOGGER.info(f"MC step {step_:.0f}/{num_steps_:.0f}")
 
-    num_types = len(model.type_map)
+    num_types = len(cluster_expansion.type_map)
 
-    ase_supercell = build.bulk(
-        model.type_map[0],
-        crystalstructure=supercell.lattice_structure.name.lower(),
-        a=supercell.lattice_parameter,
-        cubic=True,
-    ).repeat(supercell.size)
-    ase_supercell.symbols = model.type_map[initial_types]
+    lattice_structure = cluster_expansion.cluster_basis.lattice_structure
+    lattice_parameter = cluster_expansion.cluster_basis.lattice_parameter
+
+    lengths = initial_configuration.get_cell().lengths()
+
+    supercell = Supercell(
+        lattice_structure=lattice_structure,
+        lattice_parameter=lattice_parameter,
+        size=tuple((lengths // lattice_parameter).astype(int))
+    )
+
+    inverse_type_map = {v: k for k, v in enumerate(cluster_expansion.type_map)}
+    initial_types = np.fromiter((
+        inverse_type_map[symbol] for symbol in initial_configuration.get_chemical_symbols()
+    ), dtype=int)
 
     state_matrix = np.zeros((supercell.num_sites, num_types), dtype=int)
     state_matrix[np.arange(supercell.num_sites), initial_types] = 1
 
     trajectory = []
-    energy = model.interaction_vector @ supercell.feature_vector(
-        state_matrix=state_matrix,
-        max_adjacency_order=model.cluster_basis.max_adjacency_order,
-        max_triplet_order=model.cluster_basis.max_triplet_order
+    energy = cluster_expansion.model.predict(
+        supercell.feature_vector(
+            state_matrix=state_matrix,
+            max_adjacency_order=cluster_expansion.cluster_basis.max_adjacency_order,
+            max_triplet_order=cluster_expansion.cluster_basis.max_triplet_order
+        )
     )
     for step in range(num_steps):
 
@@ -164,22 +136,25 @@ def monte_carlo(
 
         if not step % save_every:
             _, types = np.where(state_matrix)
-            atoms = ase_supercell.copy()
-            atoms.set_chemical_symbols(symbols=model.type_map[types])
+            atoms = initial_configuration.copy()
+            atoms.set_chemical_symbols(symbols=cluster_expansion.type_map[types])
             atoms.calc = SinglePointCalculator(atoms=atoms, energy=energy)
             trajectory.append(atoms)
             LOGGER.info(f"saved configuration at step {step:.0f}/{num_steps:.0f}")
 
-        new_state_matrix = mc_step.step(state_matrix)
+        new_state_matrix = mc_step(state_matrix)
         feature_diff = supercell.clever_feature_diff(
             state_matrix, new_state_matrix,
-            max_adjacency_order=model.cluster_basis.max_adjacency_order,
-            max_triplet_order=model.cluster_basis.max_triplet_order
+            max_adjacency_order=cluster_expansion.cluster_basis.max_adjacency_order,
+            max_triplet_order=cluster_expansion.cluster_basis.max_triplet_order
         )
-        energy_diff = model.interaction_vector @ feature_diff
-        modified_energy = energy_diff
-        if energy_modifier:
-            modified_energy += energy_modifier(state_matrix, new_state_matrix)
+        energy_diff = cluster_expansion.model.predict(feature_diff)
+        if not isinstance(energy_diff, float):
+            raise ValueError(
+                "cluster_expansion.model.predict did not return a float. "
+                "Are you sure this model was trained on energies?"
+            )
+        modified_energy = energy_diff + energy_modifier(state_matrix, new_state_matrix)
         if np.exp(-beta * modified_energy) > 1.0 - generator.random():
             LOGGER.debug(f"move accepted with energy difference {energy_diff:.3f}")
             state_matrix = new_state_matrix

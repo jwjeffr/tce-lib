@@ -105,8 +105,8 @@ def test_noncubic_cell_raises_value_error():
         configuration.calc = SinglePointCalculator(configuration, energy=-1.0)
 
     with pytest.raises(ValueError, match=NON_CUBIC_CELL_MESSAGE):
-        _ = LimitingRidge().fit(
-            configurations,
+        _ = tce.training.train(
+            configurations=configurations,
             basis=ClusterBasis(
                 lattice_structure=LatticeStructure.BCC,
                 lattice_parameter=2.7,
@@ -127,8 +127,8 @@ def test_inconsistent_geometry_raises_value_error():
         configuration.calc = SinglePointCalculator(configuration, energy=-1.0)
 
     with pytest.raises(ValueError, match=INCOMPATIBLE_GEOMETRY_MESSAGE):
-        _ = LimitingRidge().fit(
-            configurations,
+        _ = tce.training.train(
+            configurations=configurations,
             basis=ClusterBasis(
                 lattice_structure=LatticeStructure.BCC,
                 lattice_parameter=2.7,
@@ -146,8 +146,8 @@ def test_no_energy_computation_raises_value_error():
     ]
 
     with pytest.raises(ValueError, match=NO_POTENTIAL_ENERGY_MESSAGE):
-        _ = LimitingRidge().fit(
-            configurations,
+        _ = tce.training.train(
+            configurations=configurations,
             basis=ClusterBasis(
                 lattice_structure=LatticeStructure.BCC,
                 lattice_parameter=2.7,
@@ -169,8 +169,8 @@ def test_large_system_in_training(monkeypatch):
         configurations[0].calc = SinglePointCalculator(configurations[0], energy=-1.0)
 
         with pytest.warns(UserWarning, match=re.escape(LARGE_SYSTEM_MESSAGE)):
-            _ = tce.training.LimitingRidge().fit(
-                configurations,
+            _ = tce.training.train(
+                configurations=configurations,
                 basis=ClusterBasis(
                     lattice_structure=LatticeStructure.BCC,
                     lattice_parameter=2.7,

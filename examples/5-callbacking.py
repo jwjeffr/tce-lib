@@ -3,9 +3,9 @@ import os
 
 import numpy as np
 import requests
+from ase import build
 
-from tce.structures import Supercell
-from tce.training import CEModel
+from tce.training import ClusterExpansion
 from tce.monte_carlo import monte_carlo
 
 
@@ -30,18 +30,19 @@ def main():
 
     rng = np.random.default_rng(seed=0)
 
-    model = CEModel.load(Path("CuNi.npz"))
+    cluster_expansion = ClusterExpansion.load(Path("CuNi.pkl"))
 
-    supercell = Supercell(
-        lattice_structure=model.cluster_basis.lattice_structure,
-        lattice_parameter=model.cluster_basis.lattice_parameter,
-        size=(10, 10, 10)
-    )
+    atoms = build.bulk(
+        cluster_expansion.type_map[0],
+        a=cluster_expansion.cluster_basis.lattice_parameter,
+        crystalstructure=cluster_expansion.cluster_basis.lattice_structure.name.lower(),
+        cubic=True
+    ).repeat((10, 10, 10))
+    atoms.symbols = rng.choice(cluster_expansion.type_map, size=len(atoms))
 
     trajectory = monte_carlo(
-        supercell=supercell,
-        model=model,
-        initial_types=rng.integers(len(model.type_map), size=supercell.num_sites),
+        initial_configuration=atoms,
+        cluster_expansion=cluster_expansion,
         num_steps=10_000,
         beta=19.341,
         save_every=100,

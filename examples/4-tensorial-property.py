@@ -1,11 +1,9 @@
-from pathlib import Path
-
 from ase import build, Atoms
 from ase.calculators.eam import EAM
 import numpy as np
 
-from tce.constants import LatticeStructure
-from tce.training import ClusterBasis, LimitingRidge
+from tce.constants import LatticeStructure, ClusterBasis
+from tce.training import train
 from tce.structures import Supercell
 
 
@@ -43,7 +41,7 @@ def main():
         configuration.calc = EAM(potential="Cu_Ni_Fischer_2018.eam.alloy")
         configurations.append(configuration)
 
-    model = LimitingRidge().fit(
+    cluster_expansion = train(
         configurations,
         basis=ClusterBasis(
             lattice_structure=lattice_structure,
@@ -51,7 +49,7 @@ def main():
             max_adjacency_order=3,
             max_triplet_order=2
         ),
-        property_computer=compute_stresses,
+        target_property_computer=compute_stresses,
     )
 
     # predict a larger stress
@@ -69,7 +67,7 @@ def main():
         max_adjacency_order=3,
         max_triplet_order=2
     )
-    print(feature_vector @ model.interaction_vector / supercell.num_sites)
+    print(cluster_expansion.model.predict(feature_vector) / supercell.num_sites)
 
 
 if __name__ == "__main__":

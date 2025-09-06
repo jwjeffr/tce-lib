@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from typing import Dict
 from itertools import product, permutations
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.spatial import KDTree
@@ -143,3 +144,19 @@ def load_three_body_labels(
 
 STRUCTURE_TO_THREE_BODY_LABELS = load_three_body_labels()
 r"""Mapping from lattice structure to set of three body labels"""
+
+
+@dataclass
+class ClusterBasis:
+
+    lattice_structure: LatticeStructure
+    r"""lattice structure that the trained model corresponds to"""
+
+    lattice_parameter: float
+    r"""lattice parameter that the trained model corresponds to"""
+
+    max_adjacency_order: int
+    r"""maximum adjacency order (number of nearest neighbors) that the trained model accounts for"""
+
+    max_triplet_order: int
+    r"""maximum triplet order (number of three-body clusters) that the trained model accounts for"""

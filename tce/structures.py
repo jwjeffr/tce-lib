@@ -99,7 +99,7 @@ class Supercell:
         state_matrix: sparse.COO,
         max_adjacency_order: int,
         max_triplet_order: int
-    ) -> np.typing.NDArray[np.integer]:
+    ) -> np.typing.NDArray[np.floating]:
 
         r"""
         feature vector $\mathbf{t}$ extracting topological features, i.e. number of bonds, and number of triplets
