@@ -6,7 +6,7 @@ import numpy as np
 import requests
 
 from tce.constants import LatticeStructure
-from tce.training import ClusterBasis, LimitingRidge
+from tce.training import ClusterBasis, train
 
 
 def main():
@@ -41,8 +41,8 @@ def main():
         configuration.calc = EAM(potential=potential)
         configurations.append(configuration)
 
-    model = LimitingRidge().fit(
-        configurations,
+    cluster_expansion = train(
+        configurations=configurations,
         basis=ClusterBasis(
             lattice_structure=lattice_structure,
             lattice_parameter=lattice_parameter,
@@ -51,7 +51,7 @@ def main():
         )
     )
 
-    model.save(Path("CuNi.npz"))
+    cluster_expansion.save(Path("CuNi.pkl"))
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from tce.structures import Supercell
-from tce.training import CEModel
+from tce.training import ClusterExpansion
 from tce.monte_carlo import monte_carlo, MCStep
 
 
@@ -60,11 +60,11 @@ def main():
 
     rng = np.random.default_rng(seed=0)
 
-    model = CEModel.load(Path("CuNi.npz"))
+    cluster_expansion = ClusterExpansion.load(Path("CuNi.pkl"))
 
     supercell = Supercell(
-        lattice_structure=model.cluster_basis.lattice_structure,
-        lattice_parameter=model.cluster_basis.lattice_parameter,
+        lattice_structure=cluster_expansion.cluster_basis.lattice_structure,
+        lattice_parameter=cluster_expansion.cluster_basis.lattice_parameter,
         size=(10, 10, 10)
     )
 
@@ -75,7 +75,7 @@ def main():
 
         trajectory = monte_carlo(
             supercell=supercell,
-            model=model,
+            cluster_expansion=cluster_expansion,
             initial_types=np.ones(supercell.num_sites, dtype=int),
             num_steps=10_000,
             beta=19.341,

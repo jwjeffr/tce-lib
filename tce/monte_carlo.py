@@ -8,7 +8,7 @@ from ase import Atoms, build
 from ase.calculators.singlepoint import SinglePointCalculator
 
 from tce.structures import Supercell
-from tce.training import CEModel
+from tce.training import ClusterExpansion
 
 
 LOGGER = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class TwoParticleSwap(MCStep):
 
 def monte_carlo(
     supercell: Supercell,
-    model: CEModel,
+    cluster_expansion: ClusterExpansion,
     initial_types: np.typing.NDArray[np.integer],
     num_steps: int,
     beta: float,
@@ -81,7 +81,7 @@ def monte_carlo(
     Args:
         supercell (Supercell):
             Supercell instance defining lattice
-        model (CEModel):
+        cluster_expansion (ClusterExpansion):
             Container defining training data. See `tce.training.CEModel` for more info. This will usually
             be created by `tce.training.TrainingMethod.fit`.
         initial_types (np.typing.NDArray[int]):
@@ -126,10 +126,14 @@ def monte_carlo(
 
     """
 
-    if supercell.lattice_parameter != model.cluster_basis.lattice_parameter:
-        raise ValueError(f"{supercell.lattice_parameter=} and {model.cluster_basis.lattice_parameter=} need to match!")
-    if supercell.lattice_structure != model.cluster_basis.lattice_structure:
-        raise ValueError(f"{supercell.lattice_structure=} and {model.cluster_basis.lattice_structure=} need to match!")
+    if supercell.lattice_parameter != cluster_expansion.cluster_basis.lattice_parameter:
+        raise ValueError(
+            f"{supercell.lattice_parameter=} and {cluster_expansion.cluster_basis.lattice_parameter=} need to match!"
+        )
+    if supercell.lattice_structure != cluster_expansion.cluster_basis.lattice_structure:
+        raise ValueError(
+            f"{supercell.lattice_structure=} and {cluster_expansion.cluster_basis.lattice_structure=} need to match!"
+        )
 
     if not generator:
         generator = np.random.default_rng(seed=0)
@@ -139,24 +143,26 @@ def monte_carlo(
         def callback(step_: int, num_steps_: int):
             LOGGER.info(f"MC step {step_:.0f}/{num_steps_:.0f}")
 
-    num_types = len(model.type_map)
+    num_types = len(cluster_expansion.type_map)
 
     ase_supercell = build.bulk(
-        model.type_map[0],
+        cluster_expansion.type_map[0],
         crystalstructure=supercell.lattice_structure.name.lower(),
         a=supercell.lattice_parameter,
         cubic=True,
     ).repeat(supercell.size)
-    ase_supercell.symbols = model.type_map[initial_types]
+    ase_supercell.symbols = cluster_expansion.type_map[initial_types]
 
     state_matrix = np.zeros((supercell.num_sites, num_types), dtype=int)
     state_matrix[np.arange(supercell.num_sites), initial_types] = 1
 
     trajectory = []
-    energy = model.interaction_vector @ supercell.feature_vector(
-        state_matrix=state_matrix,
-        max_adjacency_order=model.cluster_basis.max_adjacency_order,
-        max_triplet_order=model.cluster_basis.max_triplet_order
+    energy = cluster_expansion.model.predict(
+        supercell.feature_vector(
+            state_matrix=state_matrix,
+            max_adjacency_order=cluster_expansion.cluster_basis.max_adjacency_order,
+            max_triplet_order=cluster_expansion.cluster_basis.max_triplet_order
+        )
     )
     for step in range(num_steps):
 
@@ -165,7 +171,7 @@ def monte_carlo(
         if not step % save_every:
             _, types = np.where(state_matrix)
             atoms = ase_supercell.copy()
-            atoms.set_chemical_symbols(symbols=model.type_map[types])
+            atoms.set_chemical_symbols(symbols=cluster_expansion.type_map[types])
             atoms.calc = SinglePointCalculator(atoms=atoms, energy=energy)
             trajectory.append(atoms)
             LOGGER.info(f"saved configuration at step {step:.0f}/{num_steps:.0f}")
@@ -173,10 +179,10 @@ def monte_carlo(
         new_state_matrix = mc_step.step(state_matrix)
         feature_diff = supercell.clever_feature_diff(
             state_matrix, new_state_matrix,
-            max_adjacency_order=model.cluster_basis.max_adjacency_order,
-            max_triplet_order=model.cluster_basis.max_triplet_order
+            max_adjacency_order=cluster_expansion.cluster_basis.max_adjacency_order,
+            max_triplet_order=cluster_expansion.cluster_basis.max_triplet_order
         )
-        energy_diff = model.interaction_vector @ feature_diff
+        energy_diff = cluster_expansion.model.predict(feature_diff)
         modified_energy = energy_diff
         if energy_modifier:
             modified_energy += energy_modifier(state_matrix, new_state_matrix)
