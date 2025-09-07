@@ -180,3 +180,10 @@ trash
 
 # potential files
 *.eam.alloy
+
+# pickled files
+*.pkl
+
+# configuration files in examples
+examples/*/*.xyz
+examples/*.xyz
