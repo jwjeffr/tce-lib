@@ -1,6 +1,6 @@
 {
     "lattice_parameter": 3.6,
     "lattice_structure": "fcc",
-    "description": "CoNiCrFeMn data generated from surrogate models",
+    "description": "CoNiCrFeMn data generated from surrogate models. Energies calculated from a MEAM potential (https://doi.org/10.1038/s41524-017-0060-9)",
     "contact_info": "Jacob Jeffries, jwjeffr@clemson.edu"
 }

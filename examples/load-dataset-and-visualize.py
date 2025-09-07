@@ -35,6 +35,10 @@ def change_colors_modifier(color_map: Mapping[str, tuple[float, float, float]]) 
 
 def main():
 
+    # you can print out the available datasets
+    for dataset_name in available_datasets():
+        print(dataset_name)
+
     dataset = Dataset.from_dir(Path("tungsten_tantalum_genetic"))
     configurations = dataset.configurations
     

@@ -175,9 +175,6 @@ cython_debug/
 .pypirc
 trash
 
-# configuration files
-*.xyz
-
 # potentially unsafe numpy archive files
 *.npz
 
