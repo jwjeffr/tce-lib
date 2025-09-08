@@ -41,7 +41,7 @@ class Dataset:
         dataset = Dataset.load(Path(dataset_name))
     ```
     
-    See [here](https://github.com/MUEXLY/tce-lib#loading-and-visualizing-datasets) for a more concrete example
+    See [here](https://muexly.github.io/tce-lib/tce.html#loading-and-visualizing-datasets) for a more concrete example
     showing what you can do with the `tce.datasets.Dataset` object!
     """
 
