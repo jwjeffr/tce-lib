@@ -57,6 +57,7 @@ def main():
     points = np.column_stack((X.ravel(), Y.ravel(), np.full(X.size, z_val)))
     axis = np.array([1, -1, 0])
     axis = axis / np.linalg.norm(axis) * 30 * np.pi / 180
+    pipeline = None
     for point, configuration in zip(points, configurations):
         data = ase_to_ovito(configuration)
         pipeline = Pipeline(source=StaticSource(data=data))
@@ -65,6 +66,8 @@ def main():
             "W": (0.85, 0.65, 0.13)
         }))
         pipeline.add_to_scene(translation=point, rotation=axis)
+    if not pipeline:
+        raise ValueError
 
     vp = Viewport()
     legend = ColorLegendOverlay(

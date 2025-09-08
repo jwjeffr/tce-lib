@@ -21,7 +21,7 @@ DATASET_DIR = files("tce") / "datasets"
 class Dataset:
 
     r"""
-    Dataset class that can load a pre-defined dataset. To see available datasets:
+    dataset class that can load a pre-defined dataset. to see available datasets:
 
     ```py
     from tce.datasets import Dataset, available_datasets
@@ -30,7 +30,7 @@ class Dataset:
         print(dataset)
     ```
 
-    To load a given dataset:
+    to load a given dataset:
 
     ```py
     from pathlib import Path
@@ -41,7 +41,7 @@ class Dataset:
         dataset = Dataset.load(Path(dataset_name))
     ```
     
-    See [here](https://muexly.github.io/tce-lib/tce.html#loading-and-visualizing-datasets) for a more concrete example
+    see [here](https://muexly.github.io/tce-lib/tce.html#loading-and-visualizing-datasets) for a more concrete example
     showing what you can do with the `tce.datasets.Dataset` object!
     """
 

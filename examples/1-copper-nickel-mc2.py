@@ -5,6 +5,7 @@ from typing import Callable
 from functools import wraps
 
 import numpy as np
+from numpy.typing import NDArray
 import matplotlib.pyplot as plt
 from ase import build
 
@@ -15,7 +16,7 @@ from tce.monte_carlo import monte_carlo, MCStep
 def one_particle_swap_factory(generator: np.random.Generator) -> MCStep:
 
     @wraps(one_particle_swap_factory)
-    def wrapper(state_matrix: np.typing.NDArray[np.floating]) -> np.typing.NDArray[np.floating]:
+    def wrapper(state_matrix: NDArray[np.floating]) -> NDArray[np.floating]:
         num_sites, num_types = state_matrix.shape
         i, = generator.integers(num_sites, size=1)
         current_type = np.where(state_matrix[i, :] == 1)[0]
@@ -33,13 +34,13 @@ def one_particle_swap_factory(generator: np.random.Generator) -> MCStep:
 
 
 def energy_modifier_factory(
-    chemical_potentials: np.typing.NDArray[np.floating]
-) -> Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]:
+    chemical_potentials: NDArray[np.floating]
+) -> Callable[[NDArray[np.floating], NDArray[np.floating]], float]:
 
     @wraps(energy_modifier_factory)
     def wrapper(
-        state_matrix: np.typing.NDArray[np.floating],
-        new_state_matrix: np.typing.NDArray[np.floating]
+        state_matrix: NDArray[np.floating],
+        new_state_matrix: NDArray[np.floating]
     ) -> float:
         change_in_num_types = new_state_matrix.sum(axis=0) - state_matrix.sum(axis=0)
         return -chemical_potentials @ change_in_num_types

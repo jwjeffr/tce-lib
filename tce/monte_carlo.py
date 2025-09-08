@@ -9,6 +9,7 @@ import logging
 from functools import wraps
 
 import numpy as np
+from numpy.typing import NDArray
 from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
 
@@ -20,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 """@private"""
 
 
-MCStep: TypeAlias = Callable[[np.typing.NDArray[np.floating]], np.typing.NDArray[np.floating]]
+MCStep: TypeAlias = Callable[[NDArray[np.floating]], NDArray[np.floating]]
 r"""
 Type alias defining what a step in a monte carlo simulation looks like. In general, a step should look like a function 
 that takes in a state matrix $\mathbf{X}$, and returns a new one.
@@ -37,7 +38,7 @@ def two_particle_swap_factory(generator: np.random.Generator) -> MCStep:
     """
 
     @wraps(two_particle_swap_factory)
-    def wrapper(state_matrix: np.typing.NDArray) -> np.typing.NDArray[np.floating]:
+    def wrapper(state_matrix: NDArray) -> NDArray[np.floating]:
 
         new_state_matrix = state_matrix.copy()
         i, j = generator.integers(len(state_matrix), size=2)
@@ -47,7 +48,7 @@ def two_particle_swap_factory(generator: np.random.Generator) -> MCStep:
     return wrapper
 
 
-EnergyModifier: TypeAlias = Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]
+EnergyModifier: TypeAlias = Callable[[NDArray[np.floating], NDArray[np.floating]], float]
 r"""
 Type alias defining what an energy modifier should look like. In general, a modifier should look like a function that 
 takes in two state matrices $\mathbf{X}$ and $\mathbf{X}'$ and returns the term to be added to the energy difference 
@@ -64,13 +65,13 @@ from functools import wraps
 import numpy as np
 
 def energy_modifier_factory(
-    chemical_potentials: np.typing.NDArray[np.floating]
-) -> Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]:
+    chemical_potentials: NDArray[np.floating]
+) -> Callable[[NDArray[np.floating], NDArray[np.floating]], float]:
 
     @wraps(energy_modifier_factory)
     def wrapper(
-        state_matrix: np.typing.NDArray[np.floating],
-        new_state_matrix: np.typing.NDArray[np.floating]
+        state_matrix: NDArray[np.floating],
+        new_state_matrix: NDArray[np.floating]
     ) -> float:
         change_in_num_types = new_state_matrix.sum(axis=0) - state_matrix.sum(axis=0)
         return -chemical_potentials @ change_in_num_types
@@ -83,8 +84,8 @@ You can see a concrete example of the above energy modifier [here](https://githu
 
 
 def null_energy_modifier(
-    state_matrix: np.typing.NDArray[np.floating],
-    new_state_matrix: np.typing.NDArray[np.floating]
+    state_matrix: NDArray[np.floating],
+    new_state_matrix: NDArray[np.floating]
 ) -> float:
 
     r"""
@@ -107,40 +108,40 @@ def monte_carlo(
 ) -> list[Atoms]:
 
     r"""
-    Monte Carlo simulation from on a lattice defined by a Supercell
+    monte Carlo simulation from on a lattice defined by a Supercell
 
     Args:
         initial_configuration (Atoms):
             initial atomic configuration to perform MC on
         cluster_expansion (ClusterExpansion):
-            Container defining training data. See `tce.training.ClusterExpansion` for more info. This will usually
+            Container defining training data. see `tce.training.ClusterExpansion` for more info. this will usually
             be created by `tce.training.train`.
         num_steps (int):
             Number of Monte Carlo steps to perform
         beta (float):
             Thermodynamic $\beta$, defined by $\beta = 1/(k_BT)$, where $k_B$ is the Boltzmann constant and $T$ is
-            absolute temperature. Ensure that $k_B$ is in proper units such that $\beta$ is in appropriate units. For
+            absolute temperature. ensure that $k_B$ is in proper units such that $\beta$ is in appropriate units. for
             example, if the training data had energy units of eV, then $k_B$ should be defined in units of eV/K.
         save_every (int):
-            How many steps to perform before saving the MC frame. This is similar to LAMMPS's `dump_every` argument
+            How many steps to perform before saving the MC frame. this is similar to LAMMPS's `dump_every` argument
             in the `dump` command
         generator (Optional[np.random.Generator]):
-            Generator instance drawing random numbers. If not specified, set to `np.random.default_rng(seed=0)`
+            Generator instance drawing random numbers. if not specified, set to `np.random.default_rng(seed=0)`
         mc_step (Optional[MCStep]):
-            Monte Carlo simulation step. If not specified, assumes that the user wants to swap 2 particles per step.
-        energy_modifier (Optional[Callable[[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]], float]]):
-            Energy modifier when performing MC run. Each acceptance rule looks very similar for different ensembles,
-            i.e. if $\exp(-\beta \Delta H) > u$, where $u$ is a random number drawn from $[0, 1]$, then accept the swap.
+            Monte Carlo simulation step. if not specified, assume that the user wants to swap 2 particles per step.
+        energy_modifier (Optional[Callable[[NDArray[np.floating], NDArray[np.floating]], float]]):
+            Energy modifier when performing MC run. each acceptance rule looks very similar for different ensembles,
+            i.e., if $\exp(-\beta \Delta H) > u$, where $u$ is a random number drawn from $ [0, 1] $, then accept the swap.
             $\Delta H$, generally, is of the form:
             $$ \Delta H = \Delta E + f(\mathbf{X}, \mathbf{X}') $$
             For example, for the [grand canonical ensemble](https://en.wikipedia.org/wiki/Grand_canonical_ensemble):
             $$ f(\mathbf{X}, \mathbf{X}') = -\sum_\alpha \mu_\alpha\Delta N_\alpha $$
             where $\mu_\alpha$ is the chemical potential of type $\alpha$ and $\Delta N_\alpha$ is change in the number
-            of $\alpha$ atoms upon swapping. If unspecified, then energy is not modified throughout the run, which
+            of $\alpha$ atoms upon swapping. if unspecified, then energy is not modified throughout the run, which
             samples the [canonical ensemble](https://en.wikipedia.org/wiki/Canonical_ensemble).
         callback (Optional[Callable[[int, int], None]]):
-            Optional callback function that will be called after each step. Will take in the current step and the
-            number of overall steps. If not specified, defaults to a call to LOGGER.info
+            Optional callback function that will be called after each step. will take in the current step and the
+            number of overall steps. if not specified, defaults to a call to LOGGER.info
 
     """
 

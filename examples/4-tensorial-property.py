@@ -1,13 +1,14 @@
 from ase import build, Atoms
 from ase.calculators.eam import EAM
 import numpy as np
+from numpy.typing import NDArray
 
 from tce.constants import LatticeStructure, ClusterBasis
 from tce.training import train
 from tce.structures import Supercell
 
 
-def compute_stresses(atoms: Atoms) -> np.typing.NDArray[np.floating]:
+def compute_stresses(atoms: Atoms) -> NDArray[np.floating]:
 
     # train on "extensive" stress - feature vectors are extensive
 

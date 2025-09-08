@@ -64,7 +64,7 @@ def main():
                                                size=len(atoms))
         new_configuration.calc = calculator_constructor()
 
-        # get feature vector from Atoms object
+        # get feature vector from the Atoms object
         state_matrix = np.zeros((len(new_configuration), len(species)))
         for site, symbol in enumerate(new_configuration.symbols):
             state_matrix[site, inverse_type_map[symbol]] = 1.0
