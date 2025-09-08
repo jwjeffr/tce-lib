@@ -5,25 +5,36 @@ build-backend = "hatchling.build"
 [project]
 name = "tce-lib"
 dynamic = ["version"]
-description = "tensor cluster expansion"
+description = "tensor cluster expansion library for solid solution modeling"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 author = { name = "Jacob Jeffries", email = "jwjeffr@clemson.edu" }
 keywords = [
-    "alloys"
+    "alloys",
+    "cluster expansion",
+    "materials science",
+    "density functional theory",
+    "ase",
+    "monte carlo",
+    "scientific computing",
+    "machine learning"
 ]
 classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "numpy~=2.0.2",
-    "sparse~=0.16.0",
-    "scipy~=1.13.1",
-    "opt-einsum~=3.4.0",
-    "ase~=3.26.0"
+    "numpy>=2.0.0, <3.0",
+    "sparse>=0.14.0, <0.17.0",
+    "scipy>=1.6.0, <1.16.0",
+    "opt-einsum>=3.0.1, <4.0",
+    "ase>=3.10.0, <3.26.0"
 ]
 
 [project.urls]
@@ -49,14 +60,11 @@ examples = [
 [tool.hatch.version]
 path = "tce/__init__.py"
 
-[tool.hatch.build.targets.sdist]
-include = ["/tce"]
-
-[tool.hatch.build.targets.wheel]
-include = ["tce"]
-
 [tool.hatch.build]
-include = ["tce/datasets/**/*"]
+include = [
+    "tce",
+    "tce/datasets/**/*",
+]
 
 [[tool.mypy.overrides]]
 module = ["sparse", "opt_einsum"]
