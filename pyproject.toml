@@ -44,6 +44,7 @@ Homepage = "https://github.com/MUEXLY/tce-lib"
 dev = [
     "hatchling~=1.27.0",
     "pytest~=8.0.2",
+    "pytest-cov~=7.0.0",
     "ruff~=0.9.4",
     "mypy~=1.13.0",
     "pdoc~=15.0.1",

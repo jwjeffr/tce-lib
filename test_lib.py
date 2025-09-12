@@ -10,13 +10,13 @@ import tce
 from tce.constants import LatticeStructure
 from tce.structures import Supercell
 from tce.training import (
-    LimitingRidge,
     ClusterBasis,
     INCOMPATIBLE_GEOMETRY_MESSAGE,
     NO_POTENTIAL_ENERGY_MESSAGE,
     NON_CUBIC_CELL_MESSAGE,
     LARGE_SYSTEM_MESSAGE
 )
+from tce.datasets import available_datasets, Dataset
 
 
 @pytest.fixture
@@ -178,3 +178,9 @@ def test_large_system_in_training(monkeypatch):
                     max_triplet_order=1
                 )
             )
+
+
+@pytest.mark.parametrize("dataset_str", available_datasets())
+def test_can_load_dataset(dataset_str):
+
+    _ = Dataset.from_dir(dataset_str)
