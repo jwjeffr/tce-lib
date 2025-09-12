@@ -70,3 +70,9 @@ include = [
 [[tool.mypy.overrides]]
 module = ["sparse", "opt_einsum"]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["tce"]
+
+[tool.coverage.report]
+omit = ["tce/monte_carlo.py"]
