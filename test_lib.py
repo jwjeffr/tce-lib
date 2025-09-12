@@ -1,10 +1,14 @@
 from typing import Callable
 import re
+from tempfile import TemporaryDirectory
+from pathlib import Path
+import pickle
 
 import pytest
 import numpy as np
 from ase import build
 from ase.calculators.singlepoint import SinglePointCalculator
+import sparse
 
 import tce
 from tce.constants import LatticeStructure
@@ -14,8 +18,11 @@ from tce.training import (
     INCOMPATIBLE_GEOMETRY_MESSAGE,
     NO_POTENTIAL_ENERGY_MESSAGE,
     NON_CUBIC_CELL_MESSAGE,
-    LARGE_SYSTEM_MESSAGE
+    LARGE_SYSTEM_MESSAGE,
+    LimitingRidge,
+    ClusterExpansion
 )
+from tce.topology import symmetrize
 from tce.datasets import available_datasets, Dataset
 
 
@@ -183,4 +190,69 @@ def test_large_system_in_training(monkeypatch):
 @pytest.mark.parametrize("dataset_str", available_datasets())
 def test_can_load_dataset(dataset_str):
 
-    _ = Dataset.from_dir(dataset_str)
+    dataset = Dataset.from_dir(dataset_str)
+    print(dataset)
+
+
+def test_symmetrization_no_axes():
+
+    x = sparse.COO.from_numpy(np.array([
+        [1, 1],
+        [0, 1]
+    ]))
+    x_symmetrized = sparse.COO.from_numpy([
+        [1.0, 0.5],
+        [0.5, 1.0]
+    ])
+    assert np.all(symmetrize(x).todense() == x_symmetrized.todense())
+
+
+def test_limiting_ridge_throws_error():
+
+    lr = LimitingRidge()
+    with pytest.raises(ValueError):
+        lr.predict(np.zeros(2))
+
+
+def test_limiting_ridge_fit():
+
+    X = np.array([1, 2, 3]).reshape((-1, 1))
+    y = np.array([2, 4, 6])
+    lr = LimitingRidge().fit(X, y)
+    assert np.all(y == lr.predict(X))
+
+
+def test_can_write_and_read_model():
+
+    X = np.array([1, 2, 3]).reshape((-1, 1))
+    y = np.array([2, 4, 6])
+    lr = LimitingRidge().fit(X, y)
+
+    ce = ClusterExpansion(
+        model=lr,
+        cluster_basis=ClusterBasis(
+            lattice_structure=LatticeStructure.BCC,
+            lattice_parameter=2.7,
+            max_adjacency_order=3,
+            max_triplet_order=1
+        ),
+        type_map=np.array(["Fe", "Cr"])
+    )
+
+    with TemporaryDirectory() as directory:
+        temp_path = Path(directory) / "model.pkl"
+        ce.save(temp_path)
+        ce_new = ClusterExpansion.load(temp_path)
+
+    assert ce_new.cluster_basis == ce.cluster_basis
+    assert np.all(ce_new.model.coef_ == ce.model.coef_)
+
+
+def test_bad_pkl_object():
+
+    with TemporaryDirectory() as directory:
+        temp_path = Path(directory) / "obj.pkl"
+        with temp_path.open("wb") as f:
+            pickle.dump(object(), f)
+        with pytest.raises(ValueError):
+            _ = ClusterExpansion.load(temp_path)
