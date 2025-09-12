@@ -17,7 +17,9 @@ from tce.datasets import Dataset, available_datasets
 OvitoModifier: TypeAlias = Callable[[int, DataCollection], None]
 
 
-def change_colors_modifier(color_map: Mapping[str, tuple[float, float, float]]) -> OvitoModifier:
+def change_colors_modifier(
+    color_map: Mapping[str, tuple[float, float, float]]
+) -> OvitoModifier:
 
     @wraps(change_colors_modifier)
     def wrapper(frame: int, data: DataCollection) -> None:

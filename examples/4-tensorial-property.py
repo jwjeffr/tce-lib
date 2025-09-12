@@ -37,7 +37,11 @@ def main():
     for _ in range(num_configurations):
         configuration = atoms.copy()
         x_cu = generator.random()
-        configuration.symbols = generator.choice(a=species, p=[x_cu, 1.0 - x_cu], size=len(configuration))
+        configuration.symbols = generator.choice(
+            a=species,
+            p=[x_cu, 1.0 - x_cu],
+            size=len(configuration)
+        )
 
         configuration.calc = EAM(potential="Cu_Ni_Fischer_2018.eam.alloy")
         configurations.append(configuration)

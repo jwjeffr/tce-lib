@@ -19,8 +19,8 @@ def main():
     three_body_order: int = 1
     type_map: dict[int, str] = {0: "Fe", 1: "Cr"}
 
-    # we need to define a constructor here, not a Calculator object, because each configuration needs its own
-    # Calculator instance
+    # we need to define a constructor here, not a Calculator object, because each configuration
+    # needs its own Calculator instance
     def calculator_constructor() -> Callable[[], Calculator]:
         return LAMMPSlib(
             lmpcmds=[
@@ -39,8 +39,12 @@ def main():
     species = list(type_map.values())
     inverse_type_map = {v: k for k, v in type_map.items()}
 
-    atoms = build.bulk("Fe", crystalstructure=lattice_structure.name.lower(), a=lattice_parameter, cubic=True).repeat(
-        size)
+    atoms = build.bulk(
+        "Fe",
+        crystalstructure=lattice_structure.name.lower(),
+        a=lattice_parameter,
+        cubic=True
+    ).repeat(size)
     adjacency_tensors = get_adjacency_tensors(
         tree=KDTree(data=atoms.positions, boxsize=np.diag(atoms.cell)),
         cutoffs=lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[lattice_structure][:two_body_order]
@@ -51,7 +55,10 @@ def main():
         max_three_body_order=three_body_order
     )
 
-    X = np.zeros((num_samples, two_body_order * len(species) ** 2 + three_body_order * len(species) ** 3))
+    X = np.zeros((
+        num_samples,
+        two_body_order * len(species) ** 2 + three_body_order * len(species) ** 3
+    ))
     y = np.zeros(num_samples)
 
     for i in range(num_samples):
@@ -60,8 +67,11 @@ def main():
 
         new_configuration = atoms.copy()
         chromium_fraction = rng.uniform(low=0.05, high=0.95)
-        new_configuration.symbols = rng.choice(["Fe", "Cr"], p=[1.0 - chromium_fraction, chromium_fraction],
-                                               size=len(atoms))
+        new_configuration.symbols = rng.choice(
+            ["Fe", "Cr"],
+            p=[1.0 - chromium_fraction, chromium_fraction],
+            size=len(atoms)
+        )
         new_configuration.calc = calculator_constructor()
 
         # get feature vector from the Atoms object
@@ -83,10 +93,22 @@ def main():
     training_residuals = X_train @ eci - y_train
     testing_residuals = X_test @ eci - y_test
 
-    plt.hist(training_residuals / len(atoms), zorder=7, label="training", linewidth=1.0, edgecolor="black",
-             color="skyblue")
-    plt.hist(testing_residuals / len(atoms), zorder=8, label="testing", linewidth=1.0, edgecolor="black",
-             color="sandybrown")
+    plt.hist(
+        training_residuals / len(atoms),
+        zorder=7,
+        label="training",
+        linewidth=1.0,
+        edgecolor="black",
+        color="skyblue"
+    )
+    plt.hist(
+        testing_residuals / len(atoms),
+        order=8,
+        label="testing",
+        linewidth=1.0,
+        edgecolor="black",
+        color="sandybrown"
+    )
     plt.legend()
     plt.xlabel("prediction error (eV / atom)")
     plt.ylabel("counts")

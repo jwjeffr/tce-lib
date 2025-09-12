@@ -129,9 +129,15 @@ is just a list of `ase.Atoms` objects, so you have a lot of freedom to do what y
 .. include:: ../examples/1-copper-nickel-mc.py
 ```
 
-These are then visualizable with a number of softwares, including [OVITO](https://www.ovito.org/). We can now also use
-OVITO's Python library [here](https://pypi.org/p/ovito) and any of its plugins to do some analysis, as if our files
-are from any other atomistic simulation software. Below we'll compute the Cowley short range order parameter using the
+These are then visualizable with a number of softwares, including [OVITO](https://www.ovito.org/). An example of such a
+rendering is below:
+
+<div style="padding:50% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1117980384?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="animation"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
+
+Just from the animation, it doesn't look like much is happening at all. The animation is not the whole story, though -
+you can also use the trajectory to do some analysis. We can use OVITO's Python library [here](https://pypi.org/p/ovito)
+and any of its plugins to do some analysis, as if our files are from any other atomistic simulation software. Below
+we'll compute the Cowley short range order parameter using the
 `cowley-sro-parameters` plugin [here](https://pypi.org/p/cowley-sro-parameters) (shameless plug... I'm the author 🙂).
 
 ```py
