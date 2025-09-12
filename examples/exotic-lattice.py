@@ -11,7 +11,9 @@ def main():
     extend_enum(tce.constants.LatticeStructure, "DIAMOND", len(tce.constants.LatticeStructure) + 1)
 
     # define the mapping from structure to atomic basis
-    tce.constants.STRUCTURE_TO_ATOMIC_BASIS[tce.constants.LatticeStructure.DIAMOND] = np.array([
+    tce.constants.STRUCTURE_TO_ATOMIC_BASIS[
+        tce.constants.LatticeStructure.DIAMOND
+    ] = np.array([
         [0.0, 0.0, 0.0],
         [0.25, 0.25, 0.25],
         [0.0, 0.5, 0.5],
@@ -24,7 +26,9 @@ def main():
 
     # define the cutoff list for the new structure
     # you can compute these distances using ASE if you do not know them a-priori
-    tce.constants.STRUCTURE_TO_CUTOFF_LISTS[tce.constants.LatticeStructure.DIAMOND] = np.array([
+    tce.constants.STRUCTURE_TO_CUTOFF_LISTS[
+        tce.constants.LatticeStructure.DIAMOND
+    ] = np.array([
         0.25 * np.sqrt(3.0), 0.5 * np.sqrt(2.0), 0.25 * np.sqrt(11.0), 1.0
     ])
 
@@ -60,7 +64,9 @@ def main():
     # for cubic diamond, we should see 4th 1st nearest, 12 2nd nearest, 12 3rd nearest, and 6th 4th nearest
     # we should also see that there's no dispersity in the nearest neighbor counts
     distances = atoms.get_all_distances(mic=True)
-    cutoffs = lattice_parameter * tce.constants.STRUCTURE_TO_CUTOFF_LISTS[tce.constants.LatticeStructure.DIAMOND]
+    cutoffs = lattice_parameter * tce.constants.STRUCTURE_TO_CUTOFF_LISTS[
+        tce.constants.LatticeStructure.DIAMOND
+    ]
     tol = 1.0e-3
     for i, cutoff in enumerate(cutoffs):
         num_neighbors = np.logical_and(

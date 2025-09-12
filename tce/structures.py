@@ -8,6 +8,7 @@ from functools import cached_property, lru_cache
 from typing import Union
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.spatial import KDTree
 import sparse
 
@@ -19,7 +20,7 @@ from . import topology
 class Supercell:
 
     r"""
-    class representing a simulation supercell. `eq=True` and `frozen=True` ensures we can hash a `Supercell` instance,
+    class representing a simulation supercell. `eq=True` and `frozen=True` ensure we can hash a `Supercell` instance,
     which we need to cache the topology tensors later
     """
 
@@ -36,13 +37,13 @@ class Supercell:
     def num_sites(self) -> Union[int, np.integer]:
 
         r"""
-        number of total lattice sites (NOT number of unit cells!)
+        number of total lattice sites (NOT the number of unit cells!)
         """
 
         return np.prod(self.size) * STRUCTURE_TO_ATOMIC_BASIS[self.lattice_structure].shape[0]
 
     @cached_property
-    def positions(self) -> np.typing.NDArray[np.floating]:
+    def positions(self) -> NDArray[np.floating]:
 
         r"""
         positions of lattice sites
@@ -66,9 +67,9 @@ class Supercell:
             max_order (int):
                 maximum nearest neighbor order
             tolerance (float):
-                The tolerance $\varepsilon$ to include when binning interatomic distances. For example, when searching
-                for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. This
-                should be a small number. Defaults to $0.01$.
+                The tolerance $\varepsilon$ to include when binning interatomic distances. for example, when searching
+                for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. this
+                should be a small number. defaults to $0.01$.
         """
 
         return topology.get_adjacency_tensors(
@@ -83,11 +84,10 @@ class Supercell:
         r"""
         three-body tensors, computed by summing the two-body tensors
 
-        a set of labels defines each three-body tensor. e.g., in an fcc solid, the first-order triplet is formed
-        by three first-nearest neighbor pairs, so its label is $(0, 0, 0)$. similarly, the second-order triplet in fcc is
-        formed by two first-nearest neighbor pairs, and one second-nearest neighbor pair, so its label is $(0, 0, 1)$. we
-        sum over the different permutations (which triple-counts triplets), and then stack them over
-        the labels
+        a set of labels defines each three-body tensor. e.g., in a fcc solid, the first-order triplet is formed
+        by three first-nearest neighbor pairs, so its label is $ (0, 0, 0) $. similarly, the second-order triplet in fcc
+        is formed by two first-nearest neighbor pairs, and one second-nearest neighbor pair, so its label is
+        $ (0, 0, 1) $. we sum over the different permutations, and then stack them over the labels
 
         Args:
             max_order (int): Maximum three body order
@@ -109,10 +109,10 @@ class Supercell:
         state_matrix: sparse.COO,
         max_adjacency_order: int,
         max_triplet_order: int
-    ) -> np.typing.NDArray[np.floating]:
+    ) -> NDArray[np.floating]:
 
         r"""
-        feature vector $\mathbf{t}$ extracting topological features, i.e. number of bonds, and number of triplets
+        feature vector $\mathbf{t}$ extracting topological features, i.e., number of bonds and number of triplets
 
         Args:
             state_matrix (sparse.COO):
@@ -136,7 +136,7 @@ class Supercell:
         final_state_matrix: sparse.COO,
         max_adjacency_order: int,
         max_triplet_order: int,
-    ) -> np.typing.NDArray[np.floating]:
+    ) -> NDArray[np.floating]:
 
         r"""
         clever shortcut for computing feature vector difference
@@ -154,10 +154,7 @@ class Supercell:
                 The maximum three body order
         """
 
-        if max_triplet_order == 0:
-            three_body_tensors = None
-        else:
-            three_body_tensors = self.three_body_tensors(max_order=max_triplet_order)
+        three_body_tensors = self.three_body_tensors(max_order=max_triplet_order)
 
         return topology.get_feature_vector_difference(
             adjacency_tensors=self.adjacency_tensors(max_order=max_adjacency_order),

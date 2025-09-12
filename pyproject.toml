@@ -44,6 +44,7 @@ Homepage = "https://github.com/MUEXLY/tce-lib"
 dev = [
     "hatchling~=1.27.0",
     "pytest~=8.0.2",
+    "pytest-cov~=7.0.0",
     "ruff~=0.9.4",
     "mypy~=1.13.0",
     "pdoc~=15.0.1",
@@ -69,3 +70,9 @@ include = [
 [[tool.mypy.overrides]]
 module = ["sparse", "opt_einsum"]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["tce"]
+
+[tool.coverage.report]
+omit = ["tce/monte_carlo.py"]

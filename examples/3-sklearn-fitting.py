@@ -30,7 +30,11 @@ def main():
     for _ in range(num_configurations):
         configuration = atoms.copy()
         x_cu = generator.random()
-        configuration.symbols = generator.choice(a=species, p=[x_cu, 1.0 - x_cu], size=len(configuration))
+        configuration.symbols = generator.choice(
+            a=species,
+            p=[x_cu, 1.0 - x_cu],
+            size=len(configuration)
+        )
 
         configuration.calc = EAM(potential="Cu_Ni_Fischer_2018.eam.alloy")
         configurations.append(configuration)
@@ -40,6 +44,12 @@ def main():
 
     for i, alpha in enumerate(alpha_values):
 
+        pipeline = Pipeline([
+            ("scale", StandardScaler()),
+            ("reduce", PCA()),
+            ("fit", Lasso(alpha=alpha))
+        ])
+
         cluster_expansion = train(
             configurations=configurations,
             basis=ClusterBasis(
@@ -48,14 +58,12 @@ def main():
                 max_adjacency_order=3,
                 max_triplet_order=2
             ),
-            model=Pipeline([
-                ("scale", StandardScaler()),
-                ("reduce", PCA()),
-                ("fit", Lasso(alpha=alpha))
-            ])
+            model=pipeline
         )
 
-        prop_considered_clusters[i] = np.logical_not(np.isclose(cluster_expansion.model["fit"].coef_, 0.0)).mean()
+        prop_considered_clusters[i] = np.logical_not(
+            np.isclose(pipeline["fit"].coef_, 0.0)
+        ).mean()
 
     plt.plot(alpha_values, 100 * prop_considered_clusters, color="orchid")
     plt.xscale("log")

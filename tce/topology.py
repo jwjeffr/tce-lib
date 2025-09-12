@@ -9,6 +9,7 @@ from functools import wraps
 
 from scipy.spatial import KDTree
 import numpy as np
+from numpy.typing import NDArray
 import sparse
 from opt_einsum import contract
 from ase import Atoms
@@ -50,26 +51,26 @@ def symmetrize(tensor: sparse.COO, axes: Optional[tuple[int, ...]] =None) -> spa
 
 
 def get_adjacency_tensors(
-        tree: KDTree,
-        cutoffs: Union[list[float], np.typing.NDArray[np.floating]],
-        tolerance: float = 0.01
+    tree: KDTree,
+    cutoffs: Union[list[float], NDArray[np.floating]],
+    tolerance: float = 0.01
 ) -> sparse.COO:
 
     r"""
     compute adjacency tensors $A_{ij}^{(n)}$. we first compute the sparse distance matrix using the
     `scipy.spatial.KDTree` data structure, and then convert to a `sparse.COO` tensor. then we stack the tensors
-    according to neighbor order, i.e., $A_{ij}^{(n)} = 1$ if sites $i$ and $j$ are $n$'th order neighbors, and $0$ else.
+    according to neighbor order, i.e., $A_{ij}^{(n)} = 1$ if sites $i$ and $j$ are $n$th order neighbors, and $0$ else.
 
     Args:
         tree (scipy.spatial.KDTree):
-            The KDTree to compute adjacency tensors from. This structure stores lattice positions as well as lattice
+            The KDTree to compute adjacency tensors from. this structure stores lattice positions as well as lattice
             vectors to encode periodic boundary conditions.
-        cutoffs (Union[list[float], np.typing.NDArray[np.floating]]):
+        cutoffs (Union[list[float], NDArray[np.floating]]):
             Distance cutoffs for interatomic distances.
         tolerance (float):
-            The tolerance $\varepsilon$ to include when binning interatomic distances. For example, when searching
-            for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. This
-            should be a small number. Defaults to $0.01$.
+            The tolerance $\varepsilon$ to include when binning interatomic distances. for example, when searching
+            for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. this
+            should be a small number. defaults to $0.01$.
     """
 
     distances = tree.sparse_distance_matrix(tree, max_distance=(1.0 + tolerance) * cutoffs[-1]).tocsr()
@@ -85,9 +86,9 @@ def get_adjacency_tensors(
 
 
 def get_three_body_tensors(
-        lattice_structure: LatticeStructure,
-        adjacency_tensors: sparse.COO,
-        max_three_body_order: int,
+    lattice_structure: LatticeStructure,
+    adjacency_tensors: sparse.COO,
+    max_three_body_order: int,
 ) -> sparse.COO:
 
     r"""
@@ -101,7 +102,7 @@ def get_three_body_tensors(
 
     Args:
         lattice_structure (LatticeStructure):
-            The lattice structure to compute three-body tensors from. This argument is chiefly used here to grab three
+            The lattice structure to compute three-body tensors from. this argument is chiefly used here to grab three
             body labels, which depend on lattice structure.
         adjacency_tensors (sparse.COO):
             Adjacency tensors $A_{ij}^{(n)}$ of shape `(number of neighbors, number of sites, number of sites)`
@@ -132,11 +133,10 @@ def get_three_body_tensors(
     return three_body_tensors
 
 
-def get_feature_vector(
-        adjacency_tensors: sparse.COO,
-        three_body_tensors: sparse.COO,
-        state_matrix: np.typing.NDArray
-) -> np.typing.NDArray:
+def get_feature_vector(adjacency_tensors: sparse.COO,
+    three_body_tensors: sparse.COO,
+    state_matrix: NDArray
+) -> NDArray:
 
     r"""
     topological feature vector $\mathbf{t}$ with components $N_{\alpha\beta}^{(n)} = A_{ij}^{(n)}X_{i\alpha}X_{j\beta}$
@@ -171,11 +171,11 @@ def get_feature_vector(
 
 
 def get_feature_vector_difference(
-        adjacency_tensors: sparse.COO,
-        three_body_tensors: sparse.COO,
-        initial_state_matrix: np.typing.NDArray,
-        final_state_matrix: np.typing.NDArray
-) -> np.typing.NDArray:
+    adjacency_tensors: sparse.COO,
+    three_body_tensors: sparse.COO,
+    initial_state_matrix: NDArray,
+    final_state_matrix: NDArray
+) -> NDArray:
 
     r"""
     shortcut method for computing feature vector difference
@@ -187,9 +187,9 @@ def get_feature_vector_difference(
         three_body_tensors (sparse.COO):
             Three body tensors $B_{ijk}^{(n)}$ of shape
             `(number of neighbors, number of sites, number of sites, number of sites, number of sites)`.
-        initial_state_matrix (np.typing.NDArray):
+        initial_state_matrix (NDArray):
             The initial state tensor $\mathbf{X}$.
-        final_state_matrix (np.typing.NDArray):
+        final_state_matrix (NDArray):
             The final state tensor $\mathbf{X}'$.
     """
 
@@ -209,9 +209,6 @@ def get_feature_vector_difference(
         final_state_matrix[sites, :],
         final_state_matrix
     ), axes=(1, 2)).flatten()
-
-    if three_body_tensors is None:
-        return final_feature_vec_truncated - initial_feature_vec_truncated
 
     truncated_thr = sparse.take(three_body_tensors, sites, axis=1)
     initial_feature_vec_truncated = np.concatenate(
@@ -241,16 +238,13 @@ def get_feature_vector_difference(
     return final_feature_vec_truncated - initial_feature_vec_truncated
 
 
-FeatureComputer: TypeAlias = Callable[[Atoms], np.typing.NDArray[np.floating]]
+FeatureComputer: TypeAlias = Callable[[Atoms], NDArray[np.floating]]
 r"""
 Type alias defining a feature computer, which is in general a function that takes in an `ase.Atoms` object and returns a
 feature vector. 
 """
 
-def topological_feature_vector_factory(
-    basis: ClusterBasis,
-    type_map: np.typing.NDArray[np.str_]
-) -> FeatureComputer:
+def topological_feature_vector_factory(basis: ClusterBasis, type_map: NDArray[np.str_]) -> FeatureComputer:
 
     r"""
     Factory method for creating a topological feature vector computer.
@@ -258,7 +252,7 @@ def topological_feature_vector_factory(
     Args:
         basis (ClusterBasis):
             cluster basis for the topological feature vector computer
-        type_map (np.typing.NDArray[np.str_]):
+        type_map (NDArray[np.str_]):
             chemical type map that defines how chemical species are ordered
     """
 

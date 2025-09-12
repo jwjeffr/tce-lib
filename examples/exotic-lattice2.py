@@ -8,8 +8,14 @@ import tce
 def main():
 
     fluorite_unit_cell = build.bulk("UO2", crystalstructure="fluorite", a=1.0, cubic=True)
-    extend_enum(tce.constants.LatticeStructure, "FLUORITE", len(tce.constants.LatticeStructure) + 1)
-    tce.constants.STRUCTURE_TO_ATOMIC_BASIS[tce.constants.LatticeStructure.FLUORITE] = fluorite_unit_cell.positions
+    extend_enum(
+        tce.constants.LatticeStructure,
+        "FLUORITE",
+        len(tce.constants.LatticeStructure) + 1
+    )
+    tce.constants.STRUCTURE_TO_ATOMIC_BASIS[
+        tce.constants.LatticeStructure.FLUORITE
+    ] = fluorite_unit_cell.positions
 
     supercell = fluorite_unit_cell.repeat((3, 3, 3))
     distances = np.unique(supercell.get_all_distances(mic=True).flatten())
@@ -21,7 +27,9 @@ def main():
 
     unique_tol = np.sort(unique_tol)
     unique_tol = unique_tol[unique_tol < 1.1]
-    tce.constants.STRUCTURE_TO_CUTOFF_LISTS[tce.constants.LatticeStructure.FLUORITE] = unique_tol
+    tce.constants.STRUCTURE_TO_CUTOFF_LISTS[
+        tce.constants.LatticeStructure.FLUORITE
+    ] = unique_tol
     tce.constants.STRUCTURE_TO_THREE_BODY_LABELS = tce.constants.load_three_body_labels()
 
     lattice_parameter = 5.6

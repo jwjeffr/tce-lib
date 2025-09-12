@@ -1,13 +1,14 @@
 from ase import build, Atoms
 from ase.calculators.eam import EAM
 import numpy as np
+from numpy.typing import NDArray
 
 from tce.constants import LatticeStructure, ClusterBasis
 from tce.training import train
 from tce.structures import Supercell
 
 
-def compute_stresses(atoms: Atoms) -> np.typing.NDArray[np.floating]:
+def compute_stresses(atoms: Atoms) -> NDArray[np.floating]:
 
     # train on "extensive" stress - feature vectors are extensive
 
@@ -36,7 +37,11 @@ def main():
     for _ in range(num_configurations):
         configuration = atoms.copy()
         x_cu = generator.random()
-        configuration.symbols = generator.choice(a=species, p=[x_cu, 1.0 - x_cu], size=len(configuration))
+        configuration.symbols = generator.choice(
+            a=species,
+            p=[x_cu, 1.0 - x_cu],
+            size=len(configuration)
+        )
 
         configuration.calc = EAM(potential="Cu_Ni_Fischer_2018.eam.alloy")
         configurations.append(configuration)

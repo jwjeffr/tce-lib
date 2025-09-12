@@ -11,6 +11,7 @@ from pathlib import Path
 import pickle
 
 import numpy as np
+from numpy.typing import NDArray
 from ase import Atoms
 
 from tce.constants import ClusterBasis, STRUCTURE_TO_ATOMIC_BASIS
@@ -34,11 +35,11 @@ LARGE_SYSTEM_MESSAGE = f"You have passed a relatively large system (larger than 
 """@private"""
 
 
-def get_type_map(configurations: list[Atoms]) -> np.typing.NDArray[np.str_]:
+def get_type_map(configurations: list[Atoms]) -> NDArray[np.str_]:
 
     r"""
     function that generates a species ordering for a list of configurations. this grabs all chemical types available
-    within the list of configurations, and then sorts them lexographically
+    within the list of configurations, and then sorts them in lexicographic order
 
     Args:
         configurations (list[Atoms]):
@@ -50,7 +51,7 @@ def get_type_map(configurations: list[Atoms]) -> np.typing.NDArray[np.str_]:
     return np.array(sorted(list(all_types)))
 
 
-PropertyComputer: TypeAlias = Callable[[Atoms], Union[float, np.typing.NDArray[np.floating]]]
+PropertyComputer: TypeAlias = Callable[[Atoms], Union[float, NDArray[np.floating]]]
 r"""
 Type alias for computing a property from an `ase.Atoms` object. In general, this will be a function mapping a 
 configuration (an `ase.Atoms` object) to a target property, which should be either a float or an array. For example, 
@@ -85,10 +86,10 @@ def get_data_pairs(
     basis: ClusterBasis,
     target_property_computer: PropertyComputer,
     feature_computer: FeatureComputer,
-) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
 
     r"""
-    Function to create datapairs, i.e. a sequence of features and target properties $(\mathbf{X}, y)$.
+    Function to create data pairs, i.e., a sequence of features and target properties $(\mathbf{X}, y)$.
 
     Args:
         configurations (list[Atoms]):
@@ -121,7 +122,7 @@ def get_data_pairs(
 
     feature_size = basis.max_adjacency_order * num_types ** 2 + basis.max_triplet_order * num_types ** 3
     X = np.zeros((len(configurations), feature_size))
-    y: list[Union[float, np.typing.NDArray[np.floating]]] = [np.nan] * len(configurations)
+    y: list[Union[float, NDArray[np.floating]]] = [np.nan] * len(configurations)
 
     for index, atoms in enumerate(configurations):
 
@@ -136,33 +137,33 @@ class Model(Protocol):
 
     r"""
     Model protocol which defines the contract of how a model should behave. This closely follows the `scikit-learn`
-    contract, i.e. an object with a `.fit` method and a `.predict` method.
+    contract, i.e., an object with a `.fit` method and a `.predict` method.
     """
 
     @abstractmethod
-    def fit(self, X: np.typing.NDArray[np.floating], y: np.typing.NDArray[np.floating]) -> "Model":
+    def fit(self, X: NDArray[np.floating], y: NDArray[np.floating]) -> "Model":
 
         r"""
         fit with a data matrix $X$ and a target matrix $y$
 
         Args:
-            X (np.typing.NDArray[np.floating]):
+            X (NDArray[np.floating]):
                 data matrix
-            y (np.typing.NDArray[np.floating]):
+            y (NDArray[np.floating]):
                 target matrix
         """
 
         pass
 
     @abstractmethod
-    def predict(self, x: np.typing.NDArray[np.floating]) -> Union[np.typing.NDArray[np.floating], float]:
+    def predict(self, x: NDArray[np.floating]) -> Union[NDArray[np.floating], float]:
 
         r"""
         predict for a particular data vector $x$
 
         Args:
-            x (np.typing.NDArray[np.floating]):
-                data vector
+            x (NDArray[np.floating]):
+                data vecto
         """
 
         pass
@@ -178,28 +179,28 @@ class LimitingRidge:
     $$\hat{\beta} = \lim_{\lambda\to 0^+} L(\beta\;|\;\lambda) $$
     """
 
-    def fit(self, X: np.typing.NDArray[np.floating], y: np.typing.NDArray[np.floating]) -> "Model":
+    def fit(self, X: NDArray[np.floating], y: NDArray[np.floating]) -> "Model":
 
         r"""
-        fit using the Moore penrose inverse, i.e. $\hat{\beta} = X^+y$, and store the coefficients
+        fit using the Moore penrose inverse, i.e., $\hat{\beta} = X^+y$, and store the coefficients
 
         Args:
-            X (np.typing.NDArray[np.floating]):
+            X (NDArray[np.floating]):
                 data matrix
-            y (np.typing.NDArray[np.floating]):
+            y (NDArray[np.floating]):
                 target matrix
         """
 
         self.coef_ = np.linalg.pinv(X) @ y
         return self
 
-    def predict(self, x: np.typing.NDArray[np.floating]) -> Union[np.typing.NDArray[np.floating], float]:
+    def predict(self, x: NDArray[np.floating]) -> Union[NDArray[np.floating], float]:
 
         r"""
         predict for a particular data vector $x$, i.e. $\hat{y} = x^\intercal \hat{\beta}
 
         Args:
-            x (np.typing.NDArray[np.floating]):
+            x (NDArray[np.floating]):
                 data vector
         """
 
@@ -219,7 +220,7 @@ class ClusterExpansion:
 
     model: Model
     cluster_basis: ClusterBasis
-    type_map: np.typing.NDArray[np.str_]
+    type_map: NDArray[np.str_]
 
     def save(self, path: Path):
 
@@ -251,7 +252,7 @@ class ClusterExpansion:
         """
 
         warnings.warn(
-            f"{cls.__class__.__name__} uses pickle for now. This is unsecure! TODO write a serialization method"
+            f"{cls.__name__} uses pickle for now. This is unsecure! TODO write a serialization method"
         )
 
         with path.open("rb") as file:
@@ -271,7 +272,7 @@ def train(
 ) -> ClusterExpansion:
 
     r"""
-    Convenience training method wrapper. Here, we train on a list of configurations and output a cluster expansion
+    convenience training method wrapper. here, we train on a list of configurations and output a cluster expansion
     model.
 
     Args:
@@ -280,12 +281,12 @@ def train(
         basis (ClusterBasis):
             cluster basis
         model (Model, optional):
-            model used to train the model. If not specified, defaults to `training.LimitingRidge`.
+            model used to train the model. if not specified, defaults to `training.LimitingRidge`.
         target_property_computer (PropertyComputer, optional):
-            target property computer to use when training the model. If not specified, defaults to computing the total
+            target property computer to use when training the model. if not specified, defaults to computing the total
             energy.
         feature_computer (FeatureComputer, optional):
-            feature computer to use when training the model. If not specified, defaults to computing the topological
+            feature computer to use when training the model. if not specified, defaults to computing the topological
             feature vector.
     """
 

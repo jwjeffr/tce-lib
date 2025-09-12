@@ -9,6 +9,10 @@ from tce.constants import LatticeStructure, ClusterBasis
 from tce.training import train
 
 
+# from https://doi.org/10.1016/j.actamat.2019.06.027
+EAM_POTENTIAL_URL = "https://www.ctcms.nist.gov/potentials/Download/2019--Fischer-F-Schmitz-G-Eich-S-M--Cu-Ni/3/Cu_Ni_Fischer_2018.eam.alloy"
+
+
 def main():
 
     lattice_parameter = 3.56
@@ -28,13 +32,16 @@ def main():
     for _ in range(num_configurations):
         configuration = atoms.copy()
         x_cu = generator.random()
-        configuration.symbols = generator.choice(a=species, p=[x_cu, 1.0 - x_cu], size=len(configuration))
+        configuration.symbols = generator.choice(
+            a=species,
+            p=[x_cu, 1.0 - x_cu],
+            size=len(configuration)
+        )
 
         potential = "Cu_Ni_Fischer_2018.eam.alloy"
         if not Path(potential).exists():
 
-            # from https://doi.org/10.1016/j.actamat.2019.06.027
-            response = requests.get("https://www.ctcms.nist.gov/potentials/Download/2019--Fischer-F-Schmitz-G-Eich-S-M--Cu-Ni/3/Cu_Ni_Fischer_2018.eam.alloy")
+            response = requests.get(EAM_POTENTIAL_URL)
             with open(potential, "w") as file:
                 file.write(response.text)
 

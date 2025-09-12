@@ -1,6 +1,6 @@
 r"""
 This module defines some useful constants, notably lattice structures (and their corresponding cutoffs, atomic bases,
-etc). These constants define how to compute feature vectors for a solid, since topology is a function of lattice
+etc.). These constants define how to compute feature vectors for a solid, since topology is a function of lattice
 structure.
 """
 
@@ -10,6 +10,7 @@ from itertools import product, permutations
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.spatial import KDTree
 import sparse
 
@@ -17,7 +18,7 @@ import sparse
 class LatticeStructure(Enum):
 
     r"""
-    Enum type defining the most typical lattice structures: simple cubic, body-centered cubic, and face-centered cubic.
+    enum type defining the most typical lattice structures: simple cubic, body-centered cubic, and face-centered cubic.
 
     [<img
         src="https://wisc.pb.unizin.org/app/uploads/sites/293/2019/07/CNX_Chem_10_06_CubUntCll.png"
@@ -26,7 +27,7 @@ class LatticeStructure(Enum):
         title="Lattice structures. Source: UW-Madison Chemistry 103/104 Resource Book"
     />](https://wisc.pb.unizin.org/app/uploads/sites/293/2019/07/CNX_Chem_10_06_CubUntCll.png)
 
-    Chiefly, this data type defines mappings between lattice structure and three body labels. This is additionally
+    chiefly, this data type defines mappings between lattice structure and three body labels. this is additionally
     useful for creating a `Supercell` instance, e.g.:
 
     ```py
@@ -51,7 +52,7 @@ class LatticeStructure(Enum):
     r"""face-centered cubic lattice structure"""
 
 
-STRUCTURE_TO_ATOMIC_BASIS: Dict[LatticeStructure, np.typing.NDArray[np.floating]] = {
+STRUCTURE_TO_ATOMIC_BASIS: Dict[LatticeStructure, NDArray[np.floating]] = {
     LatticeStructure.SC: np.array([
         [0.0, 0.0, 0.0]
     ]),
@@ -69,7 +70,7 @@ STRUCTURE_TO_ATOMIC_BASIS: Dict[LatticeStructure, np.typing.NDArray[np.floating]
 r"""Mapping from lattice structure to atomic basis, i.e. positions of atoms within a unit cell. Here, we use the
 conventional unit cell"""
 
-STRUCTURE_TO_CUTOFF_LISTS: Dict[LatticeStructure, np.typing.NDArray[np.floating]] = {
+STRUCTURE_TO_CUTOFF_LISTS: Dict[LatticeStructure, NDArray[np.floating]] = {
     LatticeStructure.SC: np.array([1.0, np.sqrt(2.0), np.sqrt(3.0), 2.0]),
     LatticeStructure.BCC: np.array([0.5 * np.sqrt(3.0), 1.0, np.sqrt(2.0), 0.5 * np.sqrt(11.0)]),
     LatticeStructure.FCC: np.array([0.5 * np.sqrt(2.0), 1.0, np.sqrt(1.5), np.sqrt(2.0)])
@@ -80,23 +81,23 @@ r"""Mapping from lattice structure to neighbor cutoffs, in units of the lattice 
 def load_three_body_labels(
     tolerance: float = 0.01,
     min_num_sites: int = 125,
-) -> Dict[LatticeStructure, np.typing.NDArray[np.integer]]:
+) -> Dict[LatticeStructure, NDArray[np.integer]]:
 
     r"""
-    Function to generate three body labels for a given lattice structure. Here, we compute the set of three body labels
+    function to generate three body labels for a given lattice structure. here, we compute the set of three body labels
     for all lattice structures up to fourth-nearest neighbors, and store them in a mapping allowing for
-    $\mathcal{O}(1)$ access. This function is called at import, with the result stored in the module-level constant
+    $\mathcal{O}(1)$ access. this function is called at import, with the result stored in the module-level constant
     `STRUCTURE_TO_THREE_BODY_LABELS`.
 
     Args:
         tolerance (float):
-            The tolerance $\varepsilon$ to include when binning interatomic distances. For example, when searching
-            for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. This
-            should be a small number. Defaults to $0.01$.
+            The tolerance $\varepsilon$ to include when binning interatomic distances. for example, when searching
+            for a neighbor at distance $d$, we search in the shell $[(1 - \varepsilon)d, (1 + \varepsilon)d]$. this
+            should be a small number. defaults to $0.01$.
         min_num_sites (int):
-            The minimum number of atoms within a supercell when finding three body labels. The supercell should be
+            The minimum number of atoms within a supercell when finding three body labels. the supercell should be
             large enough that neighbor distances do not span multiple supercells, but small enough for an efficient
-            calculation. Defaults to $125$.
+            calculation. defaults to $125$.
     """
 
     label_dict = {}
@@ -131,12 +132,13 @@ def load_three_body_labels(
             if not labels[0] <= labels[1] <= labels[2]:
                 continue
             three_body_tensor = sum(
-                sparse.einsum(
+                (sparse.einsum(
                     "ij,jk,ki->ijk",
                     adjacency_tensors[i],
                     adjacency_tensors[j],
                     adjacency_tensors[k]
-                ) for i, j, k in set(permutations(labels))
+                ) for i, j, k in set(permutations(labels))),
+                start=sparse.COO(coords=[], shape=(len(positions), len(positions), len(positions)))
             )
             if not three_body_tensor.nnz:
                 continue
