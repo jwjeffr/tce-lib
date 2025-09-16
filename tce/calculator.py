@@ -92,10 +92,17 @@ class TCECalculator(Calculator):
 
         prop = STR_TO_PROPERTY[name]
 
+        if self.feature_computer is None:
+            raise ValueError("unspecified feature computer")
+        if atoms is None:
+            raise ValueError("please prove Atoms object")
+
         x = self.feature_computer(atoms).reshape(1, -1)
         model = self.cluster_expansions[prop].model
-        predicted = model.predict(x).squeeze()
+        predicted = model.predict(x)
 
+        if isinstance(predicted, np.ndarray):
+            predicted = predicted.squeeze()
         if prop in INTENSIVE_PROPERTIES:
             predicted /= len(atoms)
         return predicted
