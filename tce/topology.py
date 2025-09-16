@@ -6,6 +6,7 @@ compute local feature differences for efficient Monte Carlo runs.
 from itertools import permutations
 from typing import Optional, Union, TypeAlias, Callable
 from functools import wraps
+import hashlib
 
 from scipy.spatial import KDTree
 import numpy as np
@@ -244,6 +245,36 @@ Type alias defining a feature computer, which is in general a function that take
 feature vector. 
 """
 
+def hash_numpy_array(v: NDArray) -> str:
+
+    r"""
+    method to hash a numpy array so we can cache adjacency tensors when computing features
+    Args:
+        v (np.ndarray):
+            numpy array to be hashed.
+    """
+
+    data_bytes = v.tobytes()
+    shape_bytes = str(v.shape).encode("utf-8")
+    combined = data_bytes + shape_bytes
+    return hashlib.sha1(combined).hexdigest()
+
+
+def hash_topology(atoms: Atoms) -> tuple[str, str]:
+
+    r"""
+    method to hash the topology of an Atoms object so we can cache adjacency tensors when computing features
+    Args:
+        atoms (Atoms):
+            Atoms object from which to compute adjacency tensors.
+    """
+
+    positions_hash = hash_numpy_array(atoms.positions)
+    cell_hash = hash_numpy_array(atoms.cell)
+
+    return positions_hash, cell_hash
+
+
 def topological_feature_vector_factory(basis: ClusterBasis, type_map: NDArray[np.str_]) -> FeatureComputer:
 
     r"""
@@ -259,19 +290,26 @@ def topological_feature_vector_factory(basis: ClusterBasis, type_map: NDArray[np
     num_types = len(type_map)
     inverse_type_map = {v: k for k, v in enumerate(type_map)}
 
+    topology_cache: dict[tuple[str, str, ClusterBasis], tuple[sparse.COO, sparse.COO]] = {}
+
     @wraps(topological_feature_vector_factory)
     def wrapper(atoms: Atoms):
-        tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
-        adjacency_tensors = get_adjacency_tensors(
-            tree=tree,
-            cutoffs=basis.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[basis.lattice_structure][
-                                              :basis.max_adjacency_order],
-        )
-        three_body_tensors = get_three_body_tensors(
-            lattice_structure=basis.lattice_structure,
-            adjacency_tensors=adjacency_tensors,
-            max_three_body_order=basis.max_triplet_order,
-        )
+        key = (*hash_topology(atoms), basis)
+        if key in topology_cache:
+            adjacency_tensors, three_body_tensors = topology_cache[key]
+        else:
+            tree = KDTree(atoms.positions, boxsize=np.diag(atoms.cell))
+            adjacency_tensors = get_adjacency_tensors(
+                tree=tree,
+                cutoffs=basis.lattice_parameter * STRUCTURE_TO_CUTOFF_LISTS[basis.lattice_structure][
+                                                  :basis.max_adjacency_order],
+            )
+            three_body_tensors = get_three_body_tensors(
+                lattice_structure=basis.lattice_structure,
+                adjacency_tensors=adjacency_tensors,
+                max_three_body_order=basis.max_triplet_order,
+            )
+            topology_cache[key] = (adjacency_tensors, three_body_tensors, basis)
 
         state_matrix = np.zeros((len(atoms), num_types))
         for site, symbol in enumerate(atoms.symbols):

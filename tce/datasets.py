@@ -72,7 +72,7 @@ class Dataset:
         return cls(
             **metadata,
             configurations=[
-                io.read(path) for path in (DATASET_DIR / directory).glob("*.xyz")
+                io.read(path, format="extxyz") for path in (DATASET_DIR / directory).glob("*.xyz")
             ]
         )
     

@@ -191,7 +191,7 @@ def load_three_body_labels(
 
     label_dict = {}
     for lattice_structure in LatticeStructure:
-
+ 
         try:
             non_zero_labels = _STRUCTURE_TO_THREE_BODY_LABELS[lattice_structure]
         except KeyError:
@@ -206,7 +206,7 @@ STRUCTURE_TO_THREE_BODY_LABELS = load_three_body_labels()
 r"""Mapping from lattice structure to set of three body labels"""
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class ClusterBasis:
 
     r"""
