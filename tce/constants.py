@@ -154,7 +154,7 @@ STRUCTURE_TO_THREE_BODY_LABELS = load_three_body_labels()
 r"""Mapping from lattice structure to set of three body labels"""
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class ClusterBasis:
 
     r"""
