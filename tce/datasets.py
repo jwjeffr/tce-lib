@@ -71,13 +71,13 @@ class Dataset:
                 metadata = json.load(file)
 
             metadata["lattice_structure"] = getattr(LatticeStructure, metadata["lattice_structure"].upper())
-
-            configurations = [
-                io.read(path, format="extxyz") for path in (dataset_dir / directory).glob("*.xyz")
-            ]
-
-        for configuration in configurations:
-            assert isinstance(configuration, Atoms)
+            
+            configurations = []
+            for path in (dataset_dir / directory).glob("*.xyz"):
+                configuration: Atoms = io.read(path, format="extxyz")
+                if isinstance(configuration, list):
+                    raise ValueError(f"path {path} contained multiple frames")
+                configurations.append(configuration)
 
         return cls(**metadata, configurations=configurations)
     
