@@ -188,10 +188,11 @@ def test_large_system_in_training(monkeypatch):
 
 
 @pytest.mark.parametrize("dataset_str", available_datasets())
-def test_can_load_dataset(dataset_str):
+def test_can_load_and_compute_energies_from_dataset(dataset_str):
 
     dataset = Dataset.from_dir(dataset_str)
-    print(dataset)
+    for configuration in dataset.configurations:
+        _ = configuration.get_potential_energy()
 
 
 def test_symmetrization_no_axes():
