@@ -13,7 +13,7 @@ from ase import Atoms, io
 from tce.constants import LatticeStructure
 
 
-DATASET_DIR = files("tce") / "datasets"
+DATASET_DIR = Path(files("tce") / "datasets")
 """@private"""
 
 
@@ -69,12 +69,14 @@ class Dataset:
 
         metadata["lattice_structure"] = getattr(LatticeStructure, metadata["lattice_structure"].upper())
 
-        return cls(
-            **metadata,
-            configurations=[
-                io.read(path, format="extxyz") for path in (DATASET_DIR / directory).glob("*.xyz")
-            ]
-        )
+        configurations = [
+            io.read(path, format="extxyz") for path in (DATASET_DIR / directory).glob("*.xyz")
+        ]
+
+        if not all(isinstance(configuration, Atoms) for configuration in configurations):
+            raise TypeError
+
+        return cls(**metadata, configurations=configurations)
     
 
 def available_datasets() -> list[str]:
