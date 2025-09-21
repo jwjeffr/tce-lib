@@ -74,7 +74,7 @@ class Dataset:
             
             configurations = []
             for path in (dataset_dir / directory).glob("*.xyz"):
-                configuration: Atoms = io.read(path, format="extxyz")
+                configuration = io.read(path, format="extxyz")
                 if isinstance(configuration, list):
                     raise ValueError(f"path {path} contained multiple frames")
                 configurations.append(configuration)
