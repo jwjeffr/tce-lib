@@ -1,0 +1,114 @@
+name: pull-requests.yml
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+
+  prebuild:
+    name: test, lint, type check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12" ]
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up dev environment
+        run: >-
+          pip install -e .[dev]
+      - name: Test with pytest
+        run: >-
+          pytest --cov
+      - name: Lint with ruff
+        run: >-
+          ruff check tce/
+      - name: Type check with mypy
+        run: >-
+          mypy tce/
+
+  examples:
+    name: run examples
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12" ]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up examples environment
+        run: >-
+          pip install .[examples]
+      - name: Run example scripts
+        # need to skip the lammps example, github actions won't have lammps
+        # need to skip ovito examples too :( github runners missing libEGL.so.1 for ovito library
+        run: >-
+          for file in examples/*.py; do case "$file" in *2-copper-nickel-sro.py|*iron-chrome-lammps.py|*load-dataset-and-visualize.py) ;; *) python "$file";; esac; done
+        env:
+          DISCORD_WEBHOOK_URL: ${{secrets.DISCORD_WEBHOOK_URL}}
+
+  build:
+    needs:
+      - prebuild
+      - examples
+    name: build distribution
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install pypa/build
+        run: >-
+          python -m pip install build --user
+      - name: Build a binary wheel and a source tarball
+        run: python -m build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  create-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: >-
+          pip install -e .[dev]
+      - name: Build pdoc documentation
+        run: >-
+          pdoc -d google tce/ -o _build --math --favicon "https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/assets/favicon.png" --logo "https://raw.githubusercontent.com/MUEXLY/tce-lib/refs/heads/main/assets/logo.png"
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: _build/
