@@ -111,4 +111,6 @@ class TCECalculator(Calculator):
         if isinstance(predicted, np.ndarray):
             predicted = predicted.squeeze()
 
+        self.results = {name: predicted}
+
         return predicted
